@@ -8,19 +8,97 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-lexend);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-santi-primary: #FFC300;
+  --color-santi-secondary: #FFE999;
+  --color-santi-muted: #B7B7B7;
+  --radius-santi: 12px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.member-card {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hide scrollbar for drum pickers */
+.drum-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.drum-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.btn-elevation {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* iOS safe area support for fixed footer */
+.footer-safe {
+  padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ─── Shared form primitives ─────────────────────────────────────── */
+/* Using @layer components so Tailwind utilities (e.g. pl-12) can override */
+@layer components {
+  .santi-label {
+    font-size: 0.875rem;   /* text-sm */
+    font-weight: 600;       /* font-semibold */
+    color: #000;
+  }
+
+  .santi-input {
+    display: block;
+    width: 100%;
+    height: 3.5rem;         /* h-14 */
+    padding: 0 1rem;        /* px-4 */
+    background-color: #fff;
+    border: 1px solid var(--color-santi-muted);
+    border-radius: 0.75rem; /* rounded-xl */
+    font-size: 1rem;        /* text-base */
+    font-family: inherit;
+    color: #000;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+
+  .santi-input::placeholder {
+    color: var(--color-santi-muted);
+  }
+
+  .santi-input:focus {
+    border-color: var(--color-santi-primary);
+    box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.25);
+  }
+
+  .santi-textarea {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    background-color: #fff;
+    border: 1px solid var(--color-santi-muted);
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #000;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    resize: none;
+    outline: none;
+  }
+
+  .santi-textarea::placeholder {
+    color: var(--color-santi-muted);
+  }
+
+  .santi-textarea:focus {
+    border-color: var(--color-santi-primary);
+    box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.25);
+  }
 }

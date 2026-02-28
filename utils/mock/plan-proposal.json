@@ -1,0 +1,344 @@
+{
+  "line_group_id": "C1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+  "project": {
+    "id": "proj_002",
+    "name": "Annual Science Exhibition",
+    "deadline": "2026-03-31T23:59:00",
+    "detail": "Conduct a full renewable energy experiment for the school science exhibition. The project covers literature review, two rounds of experiments, data analysis, poster design, a written report, and a 15-minute live presentation to judges.",
+    "deliverables": "Lab Report, Presentation Poster, Slide Deck, Live Demo",
+    "members": [
+      {
+        "line_user_id": "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+        "display_name": "Peak",
+        "picture_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuDYY7F5j6LeSQHRF_QqfRq7xhXe39GnKKwK2GgJWFHHwFgiwoXViZSsQokZG3JOOK72OJE9nR5S5admA0MEDmYlmsSaUyaSSpOHOu_ewuNW375BjTCpMJNJMfkHFOvUeOSU6Pg7S75SbAL0y6wdPSoZf3vHhQ_bGC8dKHqqBccDAz-eKkZvIoZy6mHQ_EKV1pkY_PZ5ssUX5DYjuJAOFozJ5FnHaiWR-acPYctF8eoxsEkX0--Yqgl9byBMCr3WRG7UxTM4dqLsQj_m"
+      },
+      {
+        "line_user_id": "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+        "display_name": "Jop",
+        "picture_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuAO7ihsJLoZskQDmG6243c6_yeroKYJpKuOki0Aun04g9GMiAVsKMLXFBa8SQ_DTLap7NWCFRy1rg__PV8QRGerWHOn41fnZZ4VmVoYbjBKHEts5V4FWI0xde03sSGHi9PBq5fo0I4-KbGrUmr2ufJBGQw1T8NIX5CQnQHZJXlFba9LtK1R3xneMWF5bBXybA2ccz3TuT-1JhIPIx31YDd0fbOlbnwsV1-Aje7qJwmV60hsz5yBqeLYmRBdh_WYBhAzpIhbBsuinRNz"
+      },
+      {
+        "line_user_id": "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+        "display_name": "Sun",
+        "picture_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuBRK3-KRbbWbje9ZsdfF4ym9Nk4-50tO9uK5EL5cVOd8Nre9e7seSDjoKm5p6p8Bv-xMouG0lN2hggT-ml0TULhLlym9RBzewu4pQU5FbN5VicBaGzxg5lP-yj2ZiMqTtejkMzrY2UUrBl0lDqn7H580EGw_qLl09V0EptjkjZbt0VPstbslqileyTYryMlSkht5PwSfVV9ZJoV5lE7kNFqLLohkVI6vNijYLyeu_s7W4VSRlERiQc29B0XF5iKSH5OnpSlhowyhpKT"
+      },
+      {
+        "line_user_id": "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+        "display_name": "Justin Bieber",
+        "picture_url": "https://lh3.googleusercontent.com/aida-public/AB6AXuA-HzBwpl0-UOPfxUj3C7vr17RdVDd8e_Bs50DdVG974CdQvsQFyGHZZ5H27xmXrtoaATdq3tVy501YmVMQnevIw70WPFcTz7t0iH1yCjwiOjo8QAimLMGR-69Q6PAV4WKYJbFwavL9ZjzdrM9hsYalpfnnSmH7Ztsa6QF5dWcZFVPxLYsBAHz3Aqo2E1TYZeIyDI0EE515ANw42rru9TYMeHF6cr7UR-2Iitxh9Lck5eeYJhsAgDNuTQdYssbVKGFUWX08hm_-qI9W"
+      }
+    ]
+  },
+  "plan_version": {
+    "id": "plan_v1_002",
+    "version": 1,
+    "ai_reasoning": "Based on a 30-day timeline with 4 members, I've structured 20 sequential and parallel tasks across research, experimentation, analysis, design, and presentation phases. Tasks are distributed to match each member's strengths, with overlapping phases and 5 sync meetings to keep the team aligned before the deadline.",
+    "tasks": [
+      {
+        "id": "task_001",
+        "title": "Project Planning & Goal Setting",
+        "description": "Define project scope, assign roles, and set milestones for the full 30-day timeline.",
+        "start_date": "2026-03-02",
+        "end_date": "2026-03-03",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_002",
+        "title": "Literature Review",
+        "description": "Survey existing research on solar and wind energy efficiency to ground the experiment in proven findings.",
+        "start_date": "2026-03-03",
+        "end_date": "2026-03-06",
+        "assigned_to": [
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_003",
+        "title": "Hypothesis Formation",
+        "description": "Formulate testable hypotheses based on the literature review, covering both energy source comparisons.",
+        "start_date": "2026-03-05",
+        "end_date": "2026-03-07",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_004",
+        "title": "Experiment Design",
+        "description": "Draft the full experiment protocol including variables, controls, measurement methods, and safety procedures.",
+        "start_date": "2026-03-06",
+        "end_date": "2026-03-09",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_005",
+        "title": "Materials & Equipment Procurement",
+        "description": "Source and acquire all lab materials: solar panels, wind turbine model, multimeters, and data loggers.",
+        "start_date": "2026-03-08",
+        "end_date": "2026-03-10",
+        "assigned_to": [
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_006",
+        "title": "Laboratory Setup",
+        "description": "Assemble and calibrate all equipment. Run a dry-run to verify the experimental setup is working correctly.",
+        "start_date": "2026-03-10",
+        "end_date": "2026-03-12",
+        "assigned_to": [
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_007",
+        "title": "Experiment Round 1",
+        "description": "Execute the first round of experiments under standard conditions. Record all observations in the lab notebook.",
+        "start_date": "2026-03-11",
+        "end_date": "2026-03-14",
+        "assigned_to": [
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_008",
+        "title": "Data Recording — Round 1",
+        "description": "Compile, clean, and organise raw data from Round 1 into spreadsheets ready for analysis.",
+        "start_date": "2026-03-13",
+        "end_date": "2026-03-16",
+        "assigned_to": [
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_009",
+        "title": "Experiment Round 2",
+        "description": "Repeat the experiment with adjusted variables to validate Round 1 results and test the secondary hypothesis.",
+        "start_date": "2026-03-16",
+        "end_date": "2026-03-19",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_010",
+        "title": "Data Recording — Round 2",
+        "description": "Compile and clean Round 2 data. Flag discrepancies versus Round 1 for discussion in the analysis phase.",
+        "start_date": "2026-03-18",
+        "end_date": "2026-03-20",
+        "assigned_to": [
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_011",
+        "title": "Statistical Analysis",
+        "description": "Perform descriptive statistics, run significance tests, and draw conclusions from both rounds of data.",
+        "start_date": "2026-03-19",
+        "end_date": "2026-03-22",
+        "assigned_to": [
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_012",
+        "title": "Create Graphs & Charts",
+        "description": "Visualise all data findings as clear charts and graphs suitable for both the poster and the written report.",
+        "start_date": "2026-03-21",
+        "end_date": "2026-03-24",
+        "assigned_to": [
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_013",
+        "title": "Written Report — First Draft",
+        "description": "Write the full lab report covering introduction, methodology, results, discussion, and conclusion sections.",
+        "start_date": "2026-03-22",
+        "end_date": "2026-03-25",
+        "assigned_to": [
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_014",
+        "title": "Poster Layout & Design",
+        "description": "Design the A1 exhibition poster with clear sections for hypothesis, method, results, and conclusion. Include all charts.",
+        "start_date": "2026-03-24",
+        "end_date": "2026-03-27",
+        "assigned_to": [
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_015",
+        "title": "Peer Review & Feedback",
+        "description": "All members review the draft report and poster. Collect written feedback and prioritise revisions.",
+        "start_date": "2026-03-26",
+        "end_date": "2026-03-28",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_016",
+        "title": "Report Revision",
+        "description": "Incorporate peer feedback into the final version of the written report. Proofread for grammar and formatting.",
+        "start_date": "2026-03-27",
+        "end_date": "2026-03-29",
+        "assigned_to": [
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_017",
+        "title": "Final Poster Production",
+        "description": "Apply final revisions to the poster file and send to the print shop. Collect and mount the printed poster.",
+        "start_date": "2026-03-28",
+        "end_date": "2026-03-30",
+        "assigned_to": [
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_018",
+        "title": "Presentation Rehearsal",
+        "description": "Run through the full 15-minute presentation twice. Time each section and refine speaker transitions.",
+        "start_date": "2026-03-29",
+        "end_date": "2026-03-30",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_019",
+        "title": "Exhibition Setup",
+        "description": "Set up the booth at the exhibition hall: arrange poster, demo equipment, handouts, and name tags.",
+        "start_date": "2026-03-30",
+        "end_date": "2026-03-31",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "status": "pending"
+      },
+      {
+        "id": "task_020",
+        "title": "Final Submission & Cleanup",
+        "description": "Submit the report via the school portal, archive all project files, and clean up the lab space.",
+        "start_date": "2026-03-31",
+        "end_date": "2026-03-31",
+        "assigned_to": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+        ],
+        "status": "pending"
+      }
+    ],
+    "meetings": [
+      {
+        "id": "meeting_001",
+        "title": "Project Kickoff",
+        "datetime": "2026-03-02T10:00:00",
+        "participants": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "meeting_002",
+        "title": "Experiment Progress Check",
+        "datetime": "2026-03-12T14:00:00",
+        "participants": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "meeting_003",
+        "title": "Data Analysis Review",
+        "datetime": "2026-03-20T15:00:00",
+        "participants": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "meeting_004",
+        "title": "Draft Review Session",
+        "datetime": "2026-03-26T13:00:00",
+        "participants": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "meeting_005",
+        "title": "Pre-exhibition Walkthrough",
+        "datetime": "2026-03-30T16:00:00",
+        "participants": [
+          "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+          "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+          "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+          "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+        ],
+        "notes": ""
+      }
+    ]
+  }
+}
