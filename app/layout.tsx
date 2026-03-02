@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Lexend } from "next/font/google";
+import { LiffProvider } from "@/provider/LiffProvider";
 import "./globals.css";
 
 const lexend = Lexend({
@@ -29,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${lexend.variable} font-sans text-black antialiased`}>
-        {children}
+        <LiffProvider>{children}</LiffProvider>
       </body>
     </html>
   );

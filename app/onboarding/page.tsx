@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import liff from "@line/liff";
+import { useLiff } from "@/provider/LiffProvider";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
@@ -28,27 +28,13 @@ function CheckIcon({ className }: { className?: string }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState("");
+  const { profile } = useLiff();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Load members independently — does not require LIFF auth
     // TODO: pass groupId from LIFF context once API is ready
     getGroupMembers().then(({ members }) => setMembers(members));
-
-    // LIFF auth runs in parallel
-    const initLiff = async () => {
-      await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-      const profile = await liff.getProfile();
-      setUserId(profile.userId);
-    };
-
-    initLiff();
   }, []);
 
   const allSelected =
@@ -77,7 +63,7 @@ export default function OnboardingPage() {
   const handleContinue = () => {
     const selected = members.filter((m) => selectedIds.has(m.line_user_id));
 
-    console.log("Selected members:", selected, "User ID:", userId);
+    console.log("Selected members:", selected, "User ID:", profile?.userId);
     router.push("/onboarding/project-detail");
   };
 

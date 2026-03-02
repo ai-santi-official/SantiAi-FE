@@ -44,7 +44,7 @@ function ScrollDrum({
   onChange: (v: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const count = max - min + 1;
 
   // Set scroll position synchronously before first paint so the drum
