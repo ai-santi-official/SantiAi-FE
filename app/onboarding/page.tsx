@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiff } from "@/provider/LiffProvider";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
+import { BottomNav } from "@/components/BottomNav";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 
 function CheckIcon({ className }: { className?: string }) {
@@ -28,14 +29,15 @@ function CheckIcon({ className }: { className?: string }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { profile } = useLiff();
+  const { profile, groupId } = useLiff();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // TODO: pass groupId from LIFF context once API is ready
-    getGroupMembers().then(({ members }) => setMembers(members));
-  }, []);
+    getGroupMembers(groupId ?? "Cgroup_shared_001")
+      .then(({ members }) => setMembers(members))
+      .catch((err) => console.error("Failed to load members:", err));
+  }, [groupId]);
 
   const allSelected =
     members.length > 0 && selectedIds.size === members.length;
@@ -138,7 +140,9 @@ export default function OnboardingPage() {
       <OnboardingFooter
         onContinue={handleContinue}
         disabled={selectedIds.size === 0}
+        withNav
       />
+      <BottomNav />
     </>
   );
 }

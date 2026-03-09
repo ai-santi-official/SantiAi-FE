@@ -2,22 +2,28 @@ type Props = {
   onContinue: () => void;
   disabled?: boolean;
   label?: string;
+  /** Set true when a BottomNav is present so the button sits above it */
+  withNav?: boolean;
 };
 
 export function OnboardingFooter({
   onContinue,
   disabled = false,
   label = "Continue",
+  withNav = false,
 }: Props) {
   return (
     <>
-      {/* Spacer so content isn't hidden behind the fixed footer */}
+      {/* Spacer so content isn't hidden behind the fixed footer(s) */}
       <div
-        className="h-32"
+        className={withNav ? "h-48" : "h-32"}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       />
 
-      <footer className="fixed bottom-0 left-0 w-full footer-safe bg-white/80 backdrop-blur-sm">
+      <footer
+        className="fixed left-0 w-full footer-safe bg-white/80 backdrop-blur-sm"
+        style={{ bottom: withNav ? "60px" : "0px" }}
+      >
         <div className="max-w-md mx-auto">
           <button
             onClick={onContinue}
