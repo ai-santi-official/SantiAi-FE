@@ -1,0 +1,98 @@
+[
+  {
+    "meeting_id": "m1",
+    "meeting_name": "Weekly Sync",
+    "project_id": "1",
+    "date": "2026-03-12",
+    "start_time": "09:00",
+    "end_time": "10:00",
+    "repeat": "weekly",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+    ]
+  },
+  {
+    "meeting_id": "m2",
+    "meeting_name": "Group Brainstorming",
+    "project_id": "1",
+    "date": "2026-03-14",
+    "start_time": "14:30",
+    "end_time": "16:00",
+    "repeat": "none",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+    ]
+  },
+  {
+    "meeting_id": "m3",
+    "meeting_name": "Experiment Progress Check",
+    "project_id": "1",
+    "date": "2026-03-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "repeat": "none",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+      "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+    ]
+  },
+  {
+    "meeting_id": "m4",
+    "meeting_name": "History Kickoff",
+    "project_id": "2",
+    "date": "2026-03-10",
+    "start_time": "13:00",
+    "end_time": "14:00",
+    "repeat": "none",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+    ]
+  },
+  {
+    "meeting_id": "m5",
+    "meeting_name": "Slide Review",
+    "project_id": "2",
+    "date": "2026-03-22",
+    "start_time": "15:00",
+    "end_time": "16:30",
+    "repeat": "none",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+    ]
+  },
+  {
+    "meeting_id": "m6",
+    "meeting_name": "Math Study Session",
+    "project_id": "3",
+    "date": "2026-03-16",
+    "start_time": "17:00",
+    "end_time": "18:30",
+    "repeat": "biweekly",
+    "attendees": [
+      "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+      "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
+    ]
+  },
+  {
+    "meeting_id": "m7",
+    "meeting_name": "Draft Review Session",
+    "project_id": "2",
+    "date": "2026-03-28",
+    "start_time": "11:00",
+    "end_time": "12:00",
+    "repeat": "none",
+    "attendees": [
+      "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+    ]
+  }
+]
