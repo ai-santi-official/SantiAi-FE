@@ -13,6 +13,7 @@ type LiffState = {
   isReady: boolean;
   isLoggedIn: boolean;
   profile: LiffProfile | null;
+  groupId: string | null;
   error: Error | null;
 };
 
@@ -20,6 +21,7 @@ const LiffContext = createContext<LiffState>({
   isReady: false,
   isLoggedIn: false,
   profile: null,
+  groupId: null,
   error: null,
 });
 
@@ -28,6 +30,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     isReady: false,
     isLoggedIn: false,
     profile: null,
+    groupId: null,
     error: null,
   });
 
@@ -40,16 +43,21 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           liff.login();
           return;
         }
-        const { userId, displayName, pictureUrl } = await liff.getProfile();
+        const [{ userId, displayName, pictureUrl }, context] = await Promise.all([
+          liff.getProfile(),
+          Promise.resolve(liff.getContext()),
+        ]);
+        const groupId = context?.type === 'group' ? context.groupId : null;
         setState({
           isReady: true,
           isLoggedIn: true,
           profile: { userId, displayName, pictureUrl },
+          groupId: groupId ?? null,
           error: null,
         });
       })
       .catch((error: Error) => {
-        setState({ isReady: true, isLoggedIn: false, profile: null, error });
+        setState({ isReady: true, isLoggedIn: false, profile: null, groupId: null, error });
       });
   }, []);
 
