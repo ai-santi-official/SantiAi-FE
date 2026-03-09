@@ -112,9 +112,10 @@ type Props = {
   value: string; // ISO string or ""
   onChange: (value: string) => void;
   placeholder?: string;
+  dateOnly?: boolean;
 };
 
-export function DatePicker({ value, onChange, placeholder = "Select date & time" }: Props) {
+export function DatePicker({ value, onChange, placeholder = "Select date & time", dateOnly = false }: Props) {
   const now = new Date();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -178,7 +179,9 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
 
   const handleConfirm = () => {
     if (!selectedDay) return;
-    const date = new Date(selectedDay.y, selectedDay.m, selectedDay.d, hour, minute);
+    const date = dateOnly
+      ? new Date(selectedDay.y, selectedDay.m, selectedDay.d)
+      : new Date(selectedDay.y, selectedDay.m, selectedDay.d, hour, minute);
     onChange(date.toISOString());
     setIsOpen(false);
   };
@@ -214,7 +217,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
             </div>
 
             <div className="px-6 pb-4">
-              <h3 className="text-xl font-bold text-black">Select Deadline</h3>
+              <h3 className="text-xl font-bold text-black">{dateOnly ? "Select Date" : "Select Deadline"}</h3>
             </div>
 
             {/* ── Calendar ── */}
@@ -266,18 +269,20 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
               </div>
             </div>
 
-            {/* ── Time drums ── */}
-            <div className="px-6 py-6 border-t border-slate-100 mt-4">
-              <p className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-4">
-                Deadline Time
-              </p>
+            {/* ── Time drums (hidden in dateOnly mode) ── */}
+            {!dateOnly && (
+              <div className="px-6 py-6 border-t border-slate-100 mt-4">
+                <p className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-4">
+                  Deadline Time
+                </p>
 
-              <div className="flex items-center justify-center gap-2 bg-slate-50 py-4 rounded-2xl">
-                <ScrollDrum value={hour} min={0} max={23} onChange={setHour} />
-                <span className="text-3xl font-bold text-black pb-1 select-none">:</span>
-                <ScrollDrum value={minute} min={0} max={59} onChange={setMinute} />
+                <div className="flex items-center justify-center gap-2 bg-slate-50 py-4 rounded-2xl">
+                  <ScrollDrum value={hour} min={0} max={23} onChange={setHour} />
+                  <span className="text-3xl font-bold text-black pb-1 select-none">:</span>
+                  <ScrollDrum value={minute} min={0} max={59} onChange={setMinute} />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* ── Actions ── */}
             <div className="px-6 pb-10 pt-2 flex flex-col gap-3">
