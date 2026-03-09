@@ -44,7 +44,7 @@
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
         ],
-        "status": "pending"
+        "status": "done"
       },
       {
         "id": "task_002",
@@ -56,7 +56,7 @@
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
         ],
-        "status": "pending"
+        "status": "done"
       },
       {
         "id": "task_003",
@@ -68,7 +68,7 @@
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
         ],
-        "status": "pending"
+        "status": "done"
       },
       {
         "id": "task_004",
@@ -82,7 +82,7 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "done"
       },
       {
         "id": "task_005",
@@ -94,7 +94,7 @@
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
         ],
-        "status": "pending"
+        "status": "doing"
       },
       {
         "id": "task_006",
@@ -106,7 +106,7 @@
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
         ],
-        "status": "pending"
+        "status": "doing"
       },
       {
         "id": "task_007",
@@ -118,18 +118,18 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
         ],
-        "status": "pending"
+        "status": "doing"
       },
       {
         "id": "task_008",
-        "title": "Data Recording — Round 1",
+        "title": "Data Recording \u2014 Round 1",
         "description": "Compile, clean, and organise raw data from Round 1 into spreadsheets ready for analysis.",
         "start_date": "2026-03-13",
         "end_date": "2026-03-16",
         "assigned_to": [
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_009",
@@ -141,18 +141,18 @@
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_010",
-        "title": "Data Recording — Round 2",
+        "title": "Data Recording \u2014 Round 2",
         "description": "Compile and clean Round 2 data. Flag discrepancies versus Round 1 for discussion in the analysis phase.",
         "start_date": "2026-03-18",
         "end_date": "2026-03-20",
         "assigned_to": [
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_011",
@@ -164,7 +164,7 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_012",
@@ -175,11 +175,11 @@
         "assigned_to": [
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_013",
-        "title": "Written Report — First Draft",
+        "title": "Written Report \u2014 First Draft",
         "description": "Write the full lab report covering introduction, methodology, results, discussion, and conclusion sections.",
         "start_date": "2026-03-22",
         "end_date": "2026-03-25",
@@ -187,7 +187,7 @@
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_014",
@@ -199,7 +199,7 @@
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a",
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_015",
@@ -213,7 +213,7 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_016",
@@ -225,7 +225,7 @@
           "U2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_017",
@@ -236,7 +236,7 @@
         "assigned_to": [
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_018",
@@ -250,7 +250,7 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_019",
@@ -264,7 +264,7 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
-        "status": "pending"
+        "status": "todo"
       },
       {
         "id": "task_020",
@@ -275,7 +275,7 @@
         "assigned_to": [
           "U1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
         ],
-        "status": "pending"
+        "status": "todo"
       }
     ],
     "meetings": [

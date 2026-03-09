@@ -13,7 +13,7 @@ export type PlanTask = {
   start_date: string; // "YYYY-MM-DD"
   end_date: string;   // "YYYY-MM-DD"
   assigned_to: string[];
-  status: "pending" | "in_progress" | "done";
+  status: "todo" | "doing" | "done";
 };
 
 export type PlanMeeting = {

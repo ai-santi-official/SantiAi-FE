@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   getPlanProposal,
   type PlanProposalResponse,
@@ -19,7 +20,25 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PencilIcon,
+  MeetingIcon,
 } from "@/components/icons";
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  todo:  { label: "To Do",  className: "bg-slate-100 text-slate-500" },
+  doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
+  done:  { label: "Done",   className: "bg-green-100 text-green-700" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.todo;
+  return (
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.className}`}>
+      {cfg.label}
+    </span>
+  );
+}
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
 // Colors are assigned by task order (index % palette length) — no DB storage needed.
@@ -169,6 +188,9 @@ const MONTH_NAMES = [
 ];
 
 export default function PlanProposalPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isViewMode = searchParams.get("mode") === "view";
   const [data, setData] = useState<PlanProposalResponse | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
@@ -212,6 +234,7 @@ export default function PlanProposalPage() {
 
   const coloredTasks: ColoredTask[] = plan_version.tasks.map((task, i) => ({
     ...task,
+    status: "todo" as const,
     color: getTaskColor(i),
   }));
 
@@ -451,15 +474,13 @@ export default function PlanProposalPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span
-                            className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                            style={{
-                              backgroundColor: task.color + "28",
-                              color: task.color,
-                            }}
+                          <StatusBadge status={task.status} />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); console.log("edit task", task.id); }}
+                            className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
                           >
-                            Task
-                          </span>
+                            <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                          </button>
                           <ChevronDownIcon
                             className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${
                               expanded ? "rotate-180" : ""
@@ -501,11 +522,17 @@ export default function PlanProposalPage() {
                     <div className="flex-1 min-w-0">
                       {/* Always-visible header row */}
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-sm text-black leading-snug">{meeting.title}</p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MeetingIcon className="w-4 h-4 text-santi-primary shrink-0" />
+                          <p className="font-semibold text-sm text-black leading-snug">{meeting.title}</p>
+                        </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-xs font-semibold bg-santi-primary/30 text-black/70 px-2 py-0.5 rounded-full">
-                            Meeting
-                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); console.log("edit meeting", meeting.id); }}
+                            className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
+                          >
+                            <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                          </button>
                           <ChevronDownIcon
                             className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${
                               expanded ? "rotate-180" : ""
@@ -550,8 +577,11 @@ export default function PlanProposalPage() {
           <button className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors">
             Edit with AI
           </button>
-          <button className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all">
-            Publish
+          <button
+            onClick={() => isViewMode ? router.back() : console.log("publish")}
+            className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+          >
+            {isViewMode ? "Close" : "Publish"}
           </button>
         </div>
 
