@@ -4,14 +4,25 @@ import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon } from "@/components/icons";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import mockProjects from "@/utils/mock/projects.json";
+
+type ProjectStatus = "draft" | "waiting_approval" | "approved" | "done";
 
 type Project = {
   project_id: string;
   project_name: string;
+  project_status?: ProjectStatus;
   deadline?: string;
   detail?: string;
   deliverables?: string;
+};
+
+const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
+  draft:            { label: "Draft",            className: "bg-slate-100 text-slate-500" },
+  waiting_approval: { label: "Pending Approval", className: "bg-amber-100 text-amber-700" },
+  approved:         { label: "Approved",         className: "bg-green-100 text-green-700" },
+  done:             { label: "Done",             className: "bg-blue-100 text-blue-700" },
 };
 
 function BackArrowIcon() {
@@ -46,6 +57,13 @@ export default function ProjectInfoEditPage({
   const [detail, setDetail] = useState(project?.detail ?? "");
   const [deliverables, setDeliverables] = useState(project?.deliverables ?? "");
   const [saved, setSaved] = useState(false);
+  const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
+
+  const isDirty =
+    name !== (project?.project_name ?? "") ||
+    deadline !== (project?.deadline ?? "") ||
+    detail !== (project?.detail ?? "") ||
+    deliverables !== (project?.deliverables ?? "");
 
   if (!project) {
     return (
@@ -60,10 +78,22 @@ export default function ProjectInfoEditPage({
 
   const canSave = name.trim() !== "";
 
-  const handleSave = () => {
-    console.log("Save project", { id, name, deadline, detail, deliverables });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleBackClick = () => {
+    if (isDirty) setConfirm("discard");
+    else router.back();
+  };
+
+  const handleSaveClick = () => setConfirm("save");
+
+  const handleConfirm = () => {
+    if (confirm === "save") {
+      console.log("Save project", { id, name, deadline, detail, deliverables });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      router.back();
+    }
+    setConfirm(null);
   };
 
   return (
@@ -71,7 +101,7 @@ export default function ProjectInfoEditPage({
       {/* Header */}
       <header className="bg-santi-secondary pt-10 pb-16 px-6">
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} aria-label="Go back" className="p-1 text-black">
+          <button onClick={handleBackClick} aria-label="Go back" className="p-1 text-black">
             <BackArrowIcon />
           </button>
           <h1 className="text-lg font-bold text-black">Edit Project</h1>
@@ -92,6 +122,14 @@ export default function ProjectInfoEditPage({
           <div>
             <p className="text-xs text-santi-muted font-semibold uppercase tracking-wider">Project</p>
             <p className="font-bold text-black">{project.project_name}</p>
+            {project.project_status && (() => {
+              const cfg = PROJECT_STATUS_CONFIG[project.project_status];
+              return (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${cfg.className}`}>
+                  {cfg.label}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
@@ -153,7 +191,7 @@ export default function ProjectInfoEditPage({
       <footer className="fixed bottom-0 left-0 w-full footer-safe bg-white/80 backdrop-blur-sm border-t border-santi-muted/10">
         <div className="max-w-md mx-auto">
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={!canSave}
             className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -162,6 +200,27 @@ export default function ProjectInfoEditPage({
           </button>
         </div>
       </footer>
+      {confirm === "discard" && (
+        <ConfirmDialog
+          title="Discard changes?"
+          message="You have unsaved changes. Are you sure you want to leave without saving?"
+          confirmLabel="Discard"
+          cancelLabel="Keep editing"
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === "save" && (
+        <ConfirmDialog
+          title="Save changes?"
+          message="Are you sure you want to save the changes to this project?"
+          confirmLabel="Save"
+          cancelLabel="Keep editing"
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   );
 }

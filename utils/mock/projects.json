@@ -1,5 +1,50 @@
 [
-  { "project_id": "1", "project_name": "Final Science Project" },
-  { "project_id": "2", "project_name": "History Presentation" },
-  { "project_id": "3", "project_name": "Math Group Study" }
+  {
+    "project_id": "1",
+    "project_name": "Final Science Project",
+    "project_status": "approved",
+    "deadline": "2026-03-31T23:59:00",
+    "detail": "Conduct a renewable energy experiment for the school science exhibition covering research, experiments, and a live presentation.",
+    "deliverables": "Lab Report, Presentation Poster, Slide Deck"
+  },
+  {
+    "project_id": "2",
+    "project_name": "History Presentation",
+    "project_status": "waiting_approval",
+    "deadline": "2026-04-10T23:59:00",
+    "detail": "Research and present on the causes and effects of World War I for the history class final assessment.",
+    "deliverables": "Slide Deck, 10-minute Presentation"
+  },
+  {
+    "project_id": "3",
+    "project_name": "Math Group Study",
+    "project_status": "draft",
+    "deadline": "2026-04-20T23:59:00",
+    "detail": "Collaborative study sessions to prepare for the final calculus exam.",
+    "deliverables": "Shared Notes, Practice Problem Set"
+  },
+  {
+    "project_id": "4",
+    "project_name": "Biology Lab Report",
+    "project_status": "done",
+    "deadline": "2026-01-15T23:59:00",
+    "detail": "Completed lab report on cell membrane osmosis experiment.",
+    "deliverables": "Lab Report PDF"
+  },
+  {
+    "project_id": "5",
+    "project_name": "English Essay — Dystopia",
+    "project_status": "done",
+    "deadline": "2026-02-05T23:59:00",
+    "detail": "Group essay analysing dystopian themes in 1984 and Brave New World.",
+    "deliverables": "Essay Document, Peer Review Notes"
+  },
+  {
+    "project_id": "6",
+    "project_name": "PE Group Fitness Plan",
+    "project_status": "done",
+    "deadline": "2026-02-28T23:59:00",
+    "detail": "Designed and executed a 4-week group fitness programme for PE class.",
+    "deliverables": "Fitness Plan PDF, Progress Log"
+  }
 ]

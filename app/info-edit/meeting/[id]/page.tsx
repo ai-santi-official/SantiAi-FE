@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
 import { ChevronRightIcon } from "@/components/icons";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import mockMeetings from "@/utils/mock/meetings.json";
 import mockMembers from "@/utils/mock/group-members.json";
 
@@ -111,6 +112,17 @@ export default function MeetingInfoEditPage({
   );
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
+
+  const isDirty =
+    meetingName !== (meeting?.meeting_name ?? "") ||
+    date !== (meeting?.date ?? "") ||
+    repeat !== ((meeting?.repeat as "none" | "weekly" | "biweekly") ?? "none") ||
+    timeRange.startHour !== startParsed.hour ||
+    timeRange.startMinute !== startParsed.minute ||
+    timeRange.endHour !== endParsed.hour ||
+    timeRange.endMinute !== endParsed.minute ||
+    JSON.stringify([...selectedIds].sort()) !== JSON.stringify([...(meeting?.attendees ?? [])].sort());
 
   if (!meeting) {
     return (
@@ -139,10 +151,22 @@ export default function MeetingInfoEditPage({
 
   const canSave = meetingName.trim() !== "" && date !== "" && selectedIds.size > 0;
 
-  const handleSave = () => {
-    console.log("Save meeting", { id, meetingName, date, timeRange, repeat, attendees: [...selectedIds] });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleBackClick = () => {
+    if (isDirty) setConfirm("discard");
+    else router.back();
+  };
+
+  const handleSaveClick = () => setConfirm("save");
+
+  const handleConfirm = () => {
+    if (confirm === "save") {
+      console.log("Save meeting", { id, meetingName, date, timeRange, repeat, attendees: [...selectedIds] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      router.back();
+    }
+    setConfirm(null);
   };
 
   return (
@@ -150,7 +174,7 @@ export default function MeetingInfoEditPage({
       {/* Header */}
       <header className="bg-santi-secondary pt-10 pb-16 px-6">
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} aria-label="Go back" className="p-1 text-black">
+          <button onClick={handleBackClick} aria-label="Go back" className="p-1 text-black">
             <BackArrowIcon />
           </button>
           <h1 className="text-lg font-bold text-black">Edit Meeting</h1>
@@ -291,7 +315,7 @@ export default function MeetingInfoEditPage({
       <footer className="fixed bottom-0 left-0 w-full footer-safe bg-white/80 backdrop-blur-sm border-t border-santi-muted/10">
         <div className="max-w-md mx-auto">
           <button
-            onClick={handleSave}
+            onClick={handleSaveClick}
             disabled={!canSave}
             className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -307,6 +331,28 @@ export default function MeetingInfoEditPage({
           value={timeRange}
           onChange={setTimeRange}
           onClose={() => setShowTimePicker(false)}
+        />
+      )}
+
+      {confirm === "discard" && (
+        <ConfirmDialog
+          title="Discard changes?"
+          message="You have unsaved changes. Are you sure you want to leave without saving?"
+          confirmLabel="Discard"
+          cancelLabel="Keep editing"
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === "save" && (
+        <ConfirmDialog
+          title="Save changes?"
+          message="Are you sure you want to save the changes to this meeting?"
+          confirmLabel="Save"
+          cancelLabel="Keep editing"
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
         />
       )}
     </div>
