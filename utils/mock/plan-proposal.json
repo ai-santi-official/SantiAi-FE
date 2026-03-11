@@ -289,6 +289,8 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
+        "duration_minutes": 60,
+        "recurrence": "none",
         "notes": ""
       },
       {
@@ -301,6 +303,8 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
+        "duration_minutes": 45,
+        "recurrence": "none",
         "notes": ""
       },
       {
@@ -313,6 +317,8 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
+        "duration_minutes": 60,
+        "recurrence": "none",
         "notes": ""
       },
       {
@@ -325,6 +331,8 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
+        "duration_minutes": 60,
+        "recurrence": "none",
         "notes": ""
       },
       {
@@ -337,6 +345,8 @@
           "U3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
           "U4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a"
         ],
+        "duration_minutes": 30,
+        "recurrence": "none",
         "notes": ""
       }
     ]

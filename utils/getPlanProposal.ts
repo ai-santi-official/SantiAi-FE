@@ -20,6 +20,8 @@ export type PlanMeeting = {
   id: string;
   title: string;
   datetime: string; // ISO datetime
+  duration_minutes: number;
+  recurrence: "none" | "weekly" | "biweekly";
   participants: string[];
   notes: string;
 };

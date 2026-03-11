@@ -23,6 +23,8 @@ import {
   PencilIcon,
   MeetingIcon,
 } from "@/components/icons";
+import EditTaskSheet from "@/components/onboarding/EditTaskSheet";
+import EditMeetingSheet from "@/components/onboarding/EditMeetingSheet";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -187,11 +189,38 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+type EditingItem =
+  | { type: "task"; id: string }
+  | { type: "meeting"; id: string }
+  | null;
+
+function buildSnapshot(tasks: ColoredTask[], meetings: PlanMeeting[]) {
+  return {
+    tasks: tasks.map((t) => ({
+      title: t.title,
+      start_time: `${t.start_date}T00:00:00+07:00`,
+      end_time: `${t.end_date}T23:59:59+07:00`,
+      assignee_user_ids: t.assigned_to,
+      description: t.description,
+    })),
+    meetings: meetings.map((m) => ({
+      meeting_title: m.title,
+      meeting_time: m.datetime,
+      duration_minutes: m.duration_minutes,
+      recurrence: m.recurrence,
+      attendee_user_ids: m.participants,
+    })),
+  };
+}
+
 export default function PlanProposalPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isViewMode = searchParams.get("mode") === "view";
   const [data, setData] = useState<PlanProposalResponse | null>(null);
+  const [tasks, setTasks] = useState<ColoredTask[]>([]);
+  const [meetings, setMeetings] = useState<PlanMeeting[]>([]);
+  const [editingItem, setEditingItem] = useState<EditingItem>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
   // Calendar display month — initialised to the earliest task month when data loads
@@ -208,9 +237,37 @@ export default function PlanProposalPage() {
     });
   };
 
+  const STATUS_CYCLE: PlanTask["status"][] = ["todo", "doing", "done"];
+
+  const cycleTaskStatus = (taskId: string) => {
+    const next = tasks.map((t) => {
+      if (t.id !== taskId) return t;
+      const nextStatus = STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status) + 1) % STATUS_CYCLE.length];
+      return { ...t, status: nextStatus };
+    });
+    setTasks(next);
+    console.log("[snapshot]", JSON.stringify(buildSnapshot(next, meetings), null, 2));
+  };
+
+  const handleSaveTask = (updated: PlanTask) => {
+    const next = tasks.map((t) => (t.id === updated.id ? { ...t, ...updated } : t));
+    setTasks(next);
+    setEditingItem(null);
+    console.log("[snapshot]", JSON.stringify(buildSnapshot(next, meetings), null, 2));
+  };
+
+  const handleSaveMeeting = (updated: PlanMeeting) => {
+    const next = meetings.map((m) => (m.id === updated.id ? updated : m));
+    setMeetings(next);
+    setEditingItem(null);
+    console.log("[snapshot]", JSON.stringify(buildSnapshot(tasks, next), null, 2));
+  };
+
   useEffect(() => {
     getPlanProposal().then((d) => {
       setData(d);
+      setTasks(d.plan_version.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
+      setMeetings(d.plan_version.meetings);
       // Jump calendar to the month of the first task, not the deadline month
       const earliest = [...d.plan_version.tasks]
         .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
@@ -232,13 +289,7 @@ export default function PlanProposalPage() {
 
   const { project, plan_version } = data;
 
-  const coloredTasks: ColoredTask[] = plan_version.tasks.map((task, i) => ({
-    ...task,
-    status: "todo" as const,
-    color: getTaskColor(i),
-  }));
-
-  const timelineGroups = buildTimelineGroups(coloredTasks, plan_version.meetings);
+  const timelineGroups = buildTimelineGroups(tasks, meetings);
 
   const totalCards = timelineGroups.reduce((sum, g) => sum + g.tasks.length + g.meetings.length, 0);
   const hiddenCount = Math.max(0, totalCards - CARD_LIMIT);
@@ -264,7 +315,7 @@ export default function PlanProposalPage() {
 
   // Calendar navigation bounds: earliest task month ↔ deadline month
   const earliestTaskDate = new Date(
-    [...plan_version.tasks].sort((a, b) => a.start_date.localeCompare(b.start_date))[0].start_date + "T00:00:00"
+    [...tasks].sort((a, b) => a.start_date.localeCompare(b.start_date))[0]?.start_date + "T00:00:00"
   );
   const minCalYear = earliestTaskDate.getFullYear();
   const minCalMonth = earliestTaskDate.getMonth();
@@ -292,8 +343,8 @@ export default function PlanProposalPage() {
   const calCells = buildCalendarCells(
     calDisplayYear,
     calDisplayMonth,
-    coloredTasks,
-    plan_version.meetings,
+    tasks,
+    meetings,
     project.deadline
   );
 
@@ -474,9 +525,18 @@ export default function PlanProposalPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <StatusBadge status={task.status} />
+                          {isViewMode ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); cycleTaskStatus(task.id); }}
+                              className="rounded-full active:scale-95 transition-transform"
+                            >
+                              <StatusBadge status={task.status} />
+                            </button>
+                          ) : (
+                            <StatusBadge status={task.status} />
+                          )}
                           <button
-                            onClick={(e) => { e.stopPropagation(); console.log("edit task", task.id); }}
+                            onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
                             className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
                           >
                             <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
@@ -528,7 +588,7 @@ export default function PlanProposalPage() {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
-                            onClick={(e) => { e.stopPropagation(); console.log("edit meeting", meeting.id); }}
+                            onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
                             className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
                           >
                             <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
@@ -569,6 +629,31 @@ export default function PlanProposalPage() {
           )}
         </section>
       </main>
+
+      {/* Edit Sheets */}
+      {editingItem?.type === "task" && (() => {
+        const task = tasks.find((t) => t.id === editingItem.id);
+        return task ? (
+          <EditTaskSheet
+            task={task}
+            members={project.members}
+            showStatus={isViewMode}
+            onSave={handleSaveTask}
+            onClose={() => setEditingItem(null)}
+          />
+        ) : null;
+      })()}
+      {editingItem?.type === "meeting" && (() => {
+        const meeting = meetings.find((m) => m.id === editingItem.id);
+        return meeting ? (
+          <EditMeetingSheet
+            meeting={meeting}
+            members={project.members}
+            onSave={handleSaveMeeting}
+            onClose={() => setEditingItem(null)}
+          />
+        ) : null;
+      })()}
 
       {/* Fixed Bottom Bar */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 z-40">
