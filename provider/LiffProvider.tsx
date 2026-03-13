@@ -2,6 +2,7 @@
 
 import liff from "@line/liff";
 import { createContext, useContext, useEffect, useState } from "react";
+import { setApiToken } from "@/utils/api";
 
 type LiffProfile = {
   userId: string;
@@ -13,6 +14,7 @@ type LiffState = {
   isReady: boolean;
   isLoggedIn: boolean;
   profile: LiffProfile | null;
+  idToken: string | null;
   groupId: string | null;
   error: Error | null;
 };
@@ -21,6 +23,7 @@ const LiffContext = createContext<LiffState>({
   isReady: false,
   isLoggedIn: false,
   profile: null,
+  idToken: null,
   groupId: null,
   error: null,
 });
@@ -30,6 +33,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     isReady: false,
     isLoggedIn: false,
     profile: null,
+    idToken: null,
     groupId: null,
     error: null,
   });
@@ -48,16 +52,19 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           Promise.resolve(liff.getContext()),
         ]);
         const groupId = context?.type === 'group' ? context.groupId : null;
+        const idToken = liff.getIDToken();
+        setApiToken(idToken);
         setState({
           isReady: true,
           isLoggedIn: true,
           profile: { userId, displayName, pictureUrl },
+          idToken: idToken ?? null,
           groupId: groupId ?? null,
           error: null,
         });
       })
       .catch((error: Error) => {
-        setState({ isReady: true, isLoggedIn: false, profile: null, groupId: null, error });
+        setState({ isReady: true, isLoggedIn: false, profile: null, idToken: null, groupId: null, error });
       });
   }, []);
 

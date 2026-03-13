@@ -110,11 +110,11 @@ export default function EditMeetingSheet({ meeting, members, onSave, onClose }: 
               <label className="text-xs font-semibold text-black/60 mb-2 block">Attendees</label>
               <div className="space-y-2">
                 {members.map((m) => (
-                  <label key={m.line_user_id} className="flex items-center gap-3 cursor-pointer">
+                  <label key={m.user_id} className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={participants.includes(m.line_user_id)}
-                      onChange={() => toggleMember(m.line_user_id)}
+                      checked={participants.includes(m.user_id)}
+                      onChange={() => toggleMember(m.user_id)}
                       className="w-4 h-4 accent-santi-primary"
                     />
                     {/* eslint-disable-next-line @next/next/no-img-element */}

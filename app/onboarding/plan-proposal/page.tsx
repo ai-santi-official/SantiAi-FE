@@ -25,6 +25,9 @@ import {
 } from "@/components/icons";
 import EditTaskSheet from "@/components/onboarding/EditTaskSheet";
 import EditMeetingSheet from "@/components/onboarding/EditMeetingSheet";
+import VersionHistorySheet, { type PlanVersionSummary } from "@/components/onboarding/VersionHistorySheet";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { apiFetch } from "@/utils/api";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -160,7 +163,7 @@ function buildCalendarCells(
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[] }) {
-  const memberMap = new Map(members.map((m) => [m.line_user_id, m]));
+  const memberMap = new Map(members.map((m) => [m.user_id, m]));
   return (
     <div className="flex flex-wrap gap-2 mt-2">
       {ids.map((id) => {
@@ -197,18 +200,22 @@ type EditingItem =
 function buildSnapshot(tasks: ColoredTask[], meetings: PlanMeeting[]) {
   return {
     tasks: tasks.map((t) => ({
+      id: t.id,
       title: t.title,
-      start_time: `${t.start_date}T00:00:00+07:00`,
-      end_time: `${t.end_date}T23:59:59+07:00`,
-      assignee_user_ids: t.assigned_to,
       description: t.description,
+      start_date: t.start_date,
+      end_date: t.end_date,
+      assigned_to: t.assigned_to,
+      status: t.status,
     })),
     meetings: meetings.map((m) => ({
-      meeting_title: m.title,
-      meeting_time: m.datetime,
+      id: m.id,
+      title: m.title,
+      datetime: m.datetime,
       duration_minutes: m.duration_minutes,
       recurrence: m.recurrence,
-      attendee_user_ids: m.participants,
+      participants: m.participants,
+      notes: m.notes,
     })),
   };
 }
@@ -221,6 +228,12 @@ export default function PlanProposalPage() {
   const [tasks, setTasks] = useState<ColoredTask[]>([]);
   const [meetings, setMeetings] = useState<PlanMeeting[]>([]);
   const [editingItem, setEditingItem] = useState<EditingItem>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState<PlanVersionSummary | null>(null);
+  const [savedTasks, setSavedTasks] = useState<ColoredTask[]>([]);
+  const [savedMeetings, setSavedMeetings] = useState<PlanMeeting[]>([]);
+  const [revertTarget, setRevertTarget] = useState<PlanVersionSummary | null>(null);
+  const [reverting, setReverting] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
   // Calendar display month — initialised to the earliest task month when data loads
@@ -246,29 +259,48 @@ export default function PlanProposalPage() {
       return { ...t, status: nextStatus };
     });
     setTasks(next);
-    console.log("[snapshot]", JSON.stringify(buildSnapshot(next, meetings), null, 2));
+    savePlanVersion(next, meetings);
+  };
+
+  const savePlanVersion = async (nextTasks: ColoredTask[], nextMeetings: PlanMeeting[]) => {
+    if (!projectId) return;
+    try {
+      const snapshot = buildSnapshot(nextTasks, nextMeetings);
+      await apiFetch(`/api/v1/ai/plans/projects/${projectId}`, {
+        method: "POST",
+        body: JSON.stringify({ change_type: "manual_edit", snapshot }),
+      });
+    } catch (err) {
+      console.error("Failed to save plan version:", err);
+    }
   };
 
   const handleSaveTask = (updated: PlanTask) => {
     const next = tasks.map((t) => (t.id === updated.id ? { ...t, ...updated } : t));
     setTasks(next);
     setEditingItem(null);
-    console.log("[snapshot]", JSON.stringify(buildSnapshot(next, meetings), null, 2));
+    savePlanVersion(next, meetings);
   };
 
   const handleSaveMeeting = (updated: PlanMeeting) => {
     const next = meetings.map((m) => (m.id === updated.id ? updated : m));
     setMeetings(next);
     setEditingItem(null);
-    console.log("[snapshot]", JSON.stringify(buildSnapshot(tasks, next), null, 2));
+    savePlanVersion(tasks, next);
   };
 
-  useEffect(() => {
-    getPlanProposal().then((d) => {
+  const projectId = searchParams.get("project_id");
+
+  const handlePublish = () => {
+    if (!projectId) return;
+    router.push(`/onboarding/plan-proposal?project_id=${projectId}&mode=view`);
+  };
+
+  const loadPlan = (id: string) => {
+    getPlanProposal(id).then((d) => {
       setData(d);
       setTasks(d.plan_version.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
       setMeetings(d.plan_version.meetings);
-      // Jump calendar to the month of the first task, not the deadline month
       const earliest = [...d.plan_version.tasks]
         .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
       if (earliest) {
@@ -277,7 +309,95 @@ export default function PlanProposalPage() {
         setCalDisplayMonth(date.getMonth());
       }
     });
-  }, []);
+  };
+
+  const normalizeSnapshot = (snapshot: any): { tasks: PlanTask[]; meetings: PlanMeeting[] } => {
+    const rawTasks: any[] = snapshot?.tasks ?? [];
+    const rawMeetings: any[] = snapshot?.meetings ?? [];
+    return {
+      tasks: rawTasks.map((t: any, i: number) => ({
+        id: t.id ?? `task-${i}`,
+        title: t.title ?? "",
+        description: t.description ?? "",
+        start_date: t.start_date ?? (t.start_time ? t.start_time.slice(0, 10) : ""),
+        end_date: t.end_date ?? (t.end_time ? t.end_time.slice(0, 10) : ""),
+        assigned_to: t.assigned_to ?? t.assignee_user_ids ?? [],
+        status: t.status ?? "todo",
+      })),
+      meetings: rawMeetings.map((m: any, i: number) => ({
+        id: m.id ?? `meeting-${i}`,
+        title: m.title ?? m.meeting_title ?? "",
+        datetime: m.datetime ?? m.meeting_time ?? "",
+        duration_minutes: m.duration_minutes ?? 60,
+        recurrence: m.recurrence ?? "none",
+        participants: m.participants ?? m.attendee_user_ids ?? [],
+        notes: m.notes ?? "",
+      })),
+    };
+  };
+
+  const handlePreviewVersion = (version: PlanVersionSummary) => {
+    // Save current state so we can restore on "Back"
+    setSavedTasks(tasks);
+    setSavedMeetings(meetings);
+    setShowVersionHistory(false);
+
+    // Normalize and load the preview snapshot
+    const normalized = normalizeSnapshot(version.snapshot);
+    setTasks(normalized.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
+    setMeetings(normalized.meetings);
+    setPreviewVersion(version);
+    setExpandedIds(new Set());
+
+    // Update calendar to earliest task in preview
+    const earliest = [...normalized.tasks].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+    if (earliest) {
+      const date = new Date(earliest.start_date + "T00:00:00");
+      setCalDisplayYear(date.getFullYear());
+      setCalDisplayMonth(date.getMonth());
+    }
+  };
+
+  const exitPreview = () => {
+    setTasks(savedTasks);
+    setMeetings(savedMeetings);
+    setPreviewVersion(null);
+    setExpandedIds(new Set());
+
+    const earliest = [...savedTasks].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+    if (earliest) {
+      const date = new Date(earliest.start_date + "T00:00:00");
+      setCalDisplayYear(date.getFullYear());
+      setCalDisplayMonth(date.getMonth());
+    }
+  };
+
+  const handleRevertFromPreview = async () => {
+    if (!revertTarget || !projectId) return;
+    setReverting(true);
+    try {
+      const res = await apiFetch(
+        `/api/v1/projects/${projectId}/plan-versions/${revertTarget.plan_version_id}/revert`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error(`Failed to revert: ${res.status}`);
+      setRevertTarget(null);
+      setPreviewVersion(null);
+      loadPlan(projectId);
+    } catch (err) {
+      console.error("Failed to revert:", err);
+    } finally {
+      setReverting(false);
+    }
+  };
+
+  const isPreviewMode = !!previewVersion;
+  const isCurrentPreview = previewVersion?.version_number === data?.plan_version.version;
+
+  useEffect(() => {
+    if (!projectId) return;
+    loadPlan(projectId);
+  }, [projectId]);
 
   if (!data) {
     return (
@@ -385,13 +505,42 @@ export default function PlanProposalPage() {
                 Deadline: {formatShortDate(project.deadline)}
               </p>
             </div>
-            <span className="text-xs font-semibold bg-santi-primary/20 text-black/60 px-2.5 py-1 rounded-full shrink-0">
-              v{plan_version.version} · AI Draft
-            </span>
+            {isPreviewMode ? (
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="text-xs font-semibold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full shrink-0 active:bg-amber-200 transition-colors"
+              >
+                Previewing v{previewVersion.version_number}
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="text-xs font-semibold bg-santi-primary/20 text-black/60 px-2.5 py-1 rounded-full shrink-0 active:bg-santi-primary/30 transition-colors"
+              >
+                v{plan_version.version} · History
+              </button>
+            )}
           </div>
+          {isPreviewMode && previewVersion.created_by && (
+            <div className="flex items-center gap-2 mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewVersion.created_by.picture_url ?? "/default-avatar.png"}
+                alt=""
+                className="w-5 h-5 rounded-full object-cover bg-slate-100"
+              />
+              <span className="text-xs text-black/60">
+                Changed by <span className="font-semibold text-black/80">{previewVersion.created_by.line_display_name ?? "Unknown"}</span>
+              </span>
+            </div>
+          )}
           <div className="flex gap-2 items-start bg-santi-secondary/50 rounded-xl p-3">
             <SparklesIcon className="w-4 h-4 text-black/60 shrink-0 mt-0.5" />
-            <p className="text-xs text-black/70 leading-relaxed">{plan_version.ai_reasoning}</p>
+            <p className="text-xs text-black/70 leading-relaxed">
+              {isPreviewMode
+                ? previewVersion.snapshot?.ai_reasoning ?? plan_version.ai_reasoning
+                : plan_version.ai_reasoning}
+            </p>
           </div>
         </section>
 
@@ -525,7 +674,7 @@ export default function PlanProposalPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {isViewMode ? (
+                          {isViewMode && !isPreviewMode ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); cycleTaskStatus(task.id); }}
                               className="rounded-full active:scale-95 transition-transform"
@@ -535,12 +684,14 @@ export default function PlanProposalPage() {
                           ) : (
                             <StatusBadge status={task.status} />
                           )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
-                            className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                          >
-                            <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
-                          </button>
+                          {!isPreviewMode && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
+                              className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                              <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                            </button>
+                          )}
                           <ChevronDownIcon
                             className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${
                               expanded ? "rotate-180" : ""
@@ -587,12 +738,14 @@ export default function PlanProposalPage() {
                           <p className="font-semibold text-sm text-black leading-snug">{meeting.title}</p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
-                            className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
-                          >
-                            <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
-                          </button>
+                          {!isPreviewMode && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
+                              className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
+                            >
+                              <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                            </button>
+                          )}
                           <ChevronDownIcon
                             className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${
                               expanded ? "rotate-180" : ""
@@ -655,19 +808,64 @@ export default function PlanProposalPage() {
         ) : null;
       })()}
 
+      {showVersionHistory && projectId && (
+        <VersionHistorySheet
+          projectId={projectId}
+          currentVersionNumber={plan_version.version}
+          onPreview={handlePreviewVersion}
+          onRevert={() => {
+            setShowVersionHistory(false);
+            loadPlan(projectId);
+          }}
+          onClose={() => setShowVersionHistory(false)}
+        />
+      )}
+
+      {revertTarget && (
+        <ConfirmDialog
+          title={`Revert to v${revertTarget.version_number}?`}
+          message="This will create a new version with the snapshot from the selected version. Your current changes will still be available in the history."
+          confirmLabel={reverting ? "Reverting..." : "Revert"}
+          cancelLabel="Cancel"
+          onConfirm={handleRevertFromPreview}
+          onCancel={() => setRevertTarget(null)}
+        />
+      )}
+
       {/* Fixed Bottom Bar */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-slate-100 z-40">
         {/* Action Buttons */}
         <div className="flex gap-3 px-6 pt-3 pb-2">
-          <button className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors">
-            Edit with AI
-          </button>
-          <button
-            onClick={() => isViewMode ? router.back() : console.log("publish")}
-            className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
-          >
-            {isViewMode ? "Close" : "Publish"}
-          </button>
+          {isPreviewMode ? (
+            <>
+              <button
+                onClick={exitPreview}
+                className="flex-1 py-3.5 rounded-santi border-2 border-slate-200 font-bold text-sm text-black/60 bg-white active:bg-slate-50 transition-colors"
+              >
+                Back
+              </button>
+              {!isCurrentPreview && (
+                <button
+                  onClick={() => setRevertTarget(previewVersion)}
+                  className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+                >
+                  Revert to this version
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors">
+                Edit with AI
+              </button>
+              <button
+                onClick={() => isViewMode ? router.back() : handlePublish()}
+                className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+              >
+                {isViewMode ? "Close" : "Publish"}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Tab Bar */}

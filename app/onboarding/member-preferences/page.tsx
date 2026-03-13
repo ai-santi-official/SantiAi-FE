@@ -5,28 +5,55 @@ import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
+import { useOnboarding } from "@/provider/OnboardingProvider";
+import { useLiff } from "@/provider/LiffProvider";
+import { apiFetch } from "@/utils/api";
 
 export default function MemberPreferencesPage() {
   const router = useRouter();
+  const { groupId } = useLiff();
+  const { projectId, memberIds } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // TODO: receive only the selected members from step 1 once state management is added
-    getGroupMembers().then(({ members }) => {
-      setMembers(members);
-      setDescriptions(Object.fromEntries(members.map((m) => [m.line_user_id, ""])));
+    const gid = groupId ?? "Cgroup_shared_001";
+    getGroupMembers(gid).then(({ members: all }) => {
+      const selected = memberIds.length > 0
+        ? all.filter((m) => memberIds.includes(m.user_id))
+        : all;
+      setMembers(selected);
+      setDescriptions(Object.fromEntries(selected.map((m) => [m.user_id, ""])));
     });
-  }, []);
+  }, [groupId, memberIds]);
 
   const handleChange = (id: string, value: string) => {
     setDescriptions((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleCreatePlan = () => {
-    console.log("Member descriptions:", descriptions);
-    // TODO: submit all onboarding data to backend before navigating
-    router.push("/onboarding/plan-proposal");
+  const handleCreatePlan = async () => {
+    if (!projectId) return;
+    setSubmitting(true);
+    try {
+      const memberPreferences = Object.entries(descriptions)
+        .filter(([, pref]) => pref.trim() !== "")
+        .map(([user_id, preference]) => ({ user_id, preference }));
+
+      if (memberPreferences.length > 0) {
+        const res = await apiFetch(`/api/v1/projects/${projectId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ member_preferences: memberPreferences }),
+        });
+        if (!res.ok) throw new Error(`Failed to update preferences: ${res.status}`);
+      }
+
+      router.push(`/onboarding/plan-proposal?project_id=${projectId}`);
+    } catch (err) {
+      console.error("Failed to update preferences:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -44,7 +71,7 @@ export default function MemberPreferencesPage() {
         <div className="space-y-4">
           {members.map((member) => (
             <div
-              key={member.line_user_id}
+              key={member.user_id}
               className="bg-white border border-slate-200 rounded-2xl p-4"
             >
               <div className="flex items-center gap-3 mb-3">
@@ -61,15 +88,15 @@ export default function MemberPreferencesPage() {
               <textarea
                 className="w-full bg-slate-50 border-0 rounded-xl text-sm p-3 focus:outline-none focus:ring-2 focus:ring-santi-primary/50 resize-none h-20 placeholder:text-slate-400 font-sans"
                 placeholder="Good at design, research, presentation..."
-                value={descriptions[member.line_user_id] ?? ""}
-                onChange={(e) => handleChange(member.line_user_id, e.target.value)}
+                value={descriptions[member.user_id] ?? ""}
+                onChange={(e) => handleChange(member.user_id, e.target.value)}
               />
             </div>
           ))}
         </div>
       </main>
 
-      <OnboardingFooter onContinue={handleCreatePlan} label="Create Plan" />
+      <OnboardingFooter onContinue={handleCreatePlan} label={submitting ? "Saving..." : "Create Plan"} disabled={submitting} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 /** Shape of each member as returned by GET /api/v1/line-groups/:id/members */
 export type GroupMember = {
+  user_id: string;
   line_user_id: string;
   display_name: string | null;
   picture_url: string | null;

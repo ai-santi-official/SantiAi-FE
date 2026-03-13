@@ -7,6 +7,8 @@ import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
+import { useOnboarding } from "@/provider/OnboardingProvider";
+import { apiFetch } from "@/utils/api";
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -30,8 +32,10 @@ function CheckIcon({ className }: { className?: string }) {
 export default function OnboardingPage() {
   const router = useRouter();
   const { profile, groupId } = useLiff();
+  const { setMemberIds, setProjectId } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getGroupMembers(groupId ?? "Cgroup_shared_001")
@@ -46,7 +50,7 @@ export default function OnboardingPage() {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(members.map((m) => m.line_user_id)));
+      setSelectedIds(new Set(members.map((m) => m.user_id)));
     }
   };
 
@@ -62,11 +66,38 @@ export default function OnboardingPage() {
     });
   };
 
-  const handleContinue = () => {
-    const selected = members.filter((m) => selectedIds.has(m.line_user_id));
+  const handleContinue = async () => {
+    setSubmitting(true);
+    try {
+      const lineGroupId = groupId ?? "Cgroup_shared_001";
+      const ids = Array.from(selectedIds);
 
-    console.log("Selected members:", selected, "User ID:", profile?.userId);
-    router.push("/onboarding/project-detail");
+      // Resolve creator: match LIFF profile to user_id, fallback to first selected
+      const creator = profile
+        ? members.find((m) => m.line_user_id === profile.userId)
+        : null;
+      const creatorUserId = creator?.user_id ?? ids[0];
+
+      const res = await apiFetch("/api/v1/projects", {
+        method: "POST",
+        body: JSON.stringify({
+          line_group_id: lineGroupId,
+          created_by_user_id: creatorUserId,
+          member_user_ids: ids,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Failed to create project: ${res.status}`);
+
+      const { project_id } = (await res.json()) as { project_id: string };
+      setProjectId(project_id);
+      setMemberIds(ids);
+      router.push("/onboarding/project-detail");
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -106,11 +137,11 @@ export default function OnboardingPage() {
         {/* Individual Member Cards */}
         <section className="space-y-3 pt-3">
           {members.map((member) => {
-            const selected = selectedIds.has(member.line_user_id);
+            const selected = selectedIds.has(member.user_id);
             return (
               <div
                 key={member.line_user_id}
-                onClick={() => toggleMember(member.line_user_id)}
+                onClick={() => toggleMember(member.user_id)}
                 className={`member-card flex items-center justify-between p-4 rounded-santi cursor-pointer ${
                   selected
                     ? "bg-santi-secondary border-2 border-santi-primary"
@@ -139,7 +170,8 @@ export default function OnboardingPage() {
 
       <OnboardingFooter
         onContinue={handleContinue}
-        disabled={selectedIds.size === 0}
+        disabled={selectedIds.size === 0 || submitting}
+        label={submitting ? "Creating..." : "Continue"}
         withNav
       />
       <BottomNav />

@@ -1,11 +1,15 @@
+import { OnboardingProvider } from "@/provider/OnboardingProvider";
+
 export default function OnboardingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-white">
-      {children}
-    </div>
+    <OnboardingProvider>
+      <div className="max-w-md mx-auto min-h-dvh bg-white">
+        {children}
+      </div>
+    </OnboardingProvider>
   );
 }

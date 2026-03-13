@@ -6,13 +6,17 @@ import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon } from "@/components/icons";
+import { useOnboarding } from "@/provider/OnboardingProvider";
+import { apiFetch } from "@/utils/api";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
+  const { projectId } = useOnboarding();
   const [name, setName] = useState("");
   const [deadline, setDeadline] = useState("");
   const [detail, setDetail] = useState("");
   const [deliverables, setDeliverables] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const canContinue =
     name.trim() !== "" &&
@@ -20,9 +24,26 @@ export default function ProjectDetailPage() {
     detail.trim() !== "" &&
     deliverables.trim() !== "";
 
-  const handleContinue = () => {
-    console.log({ name, deadline, detail, deliverables });
-    router.push("/onboarding/member-preferences");
+  const handleContinue = async () => {
+    if (!projectId) return;
+    setSubmitting(true);
+    try {
+      const res = await apiFetch(`/api/v1/projects/${projectId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          project_name: name,
+          final_due_date: deadline,
+          final_deliverable: deliverables,
+          project_detail: detail,
+        }),
+      });
+      if (!res.ok) throw new Error(`Failed to update project: ${res.status}`);
+      router.push("/onboarding/member-preferences");
+    } catch (err) {
+      console.error("Failed to update project:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -86,7 +107,7 @@ export default function ProjectDetailPage() {
         </div>
       </main>
 
-      <OnboardingFooter onContinue={handleContinue} disabled={!canContinue} />
+      <OnboardingFooter onContinue={handleContinue} disabled={!canContinue || submitting} label={submitting ? "Saving..." : "Continue"} />
     </>
   );
 }
