@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MeetingHeader } from "@/components/meeting/MeetingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { BottomNav } from "@/components/BottomNav";
-import mockProjects from "@/utils/mock/projects.json";
+import { useLiff } from "@/provider/LiffProvider";
+import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
 
-type Project = {
-  project_id: string;
-  project_name: string;
-};
+const DEV_GROUP_ID = "Cgroup_shared_001";
 
 function CheckCircleIcon() {
   return (
@@ -29,12 +27,24 @@ function CheckCircleIcon() {
 
 export default function MeetingSelectProjectPage() {
   const router = useRouter();
+  const { groupId } = useLiff();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const projects: Project[] = mockProjects;
+  const [projects, setProjects] = useState<GroupProject[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const lineGroupId = groupId ?? DEV_GROUP_ID;
+
+  useEffect(() => {
+    getGroupProjects(lineGroupId)
+      .then((res) => setProjects(res.projects.filter((p) => p.project_status === "approved")))
+      .catch((err) => console.error("Failed to load projects:", err))
+      .finally(() => setLoading(false));
+  }, [lineGroupId]);
 
   const handleNext = () => {
     if (!selectedId) return;
-    router.push(`/meeting/details?projectId=${selectedId}`);
+    const projectName = projects.find((p) => p.project_id === selectedId)?.project_name ?? "";
+    router.push(`/meeting/details?projectId=${selectedId}&projectName=${encodeURIComponent(projectName)}`);
   };
 
   return (
@@ -52,6 +62,12 @@ export default function MeetingSelectProjectPage() {
         </section>
 
         <section className="flex flex-col gap-3">
+          {loading && (
+            <p className="text-center text-gray-400 py-8">Loading projects…</p>
+          )}
+          {!loading && projects.length === 0 && (
+            <p className="text-center text-gray-400 py-8">No projects found for this group.</p>
+          )}
           {projects.map((project) => {
             const selected = selectedId === project.project_id;
             return (

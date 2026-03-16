@@ -1,32 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import mockProjects from "@/utils/mock/projects.json";
-import mockMeetings from "@/utils/mock/meetings.json";
 import { BottomNav } from "@/components/BottomNav";
+import { useLiff } from "@/provider/LiffProvider";
+import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
+import { getGroupMeetings, type GroupMeeting } from "@/utils/getGroupMeetings";
+
+const DEV_GROUP_ID = "Cgroup_shared_001";
 
 type ProjectStatus = "draft" | "waiting_approval" | "approved" | "done";
-
-type Project = {
-  project_id: string;
-  project_name: string;
-  project_status: ProjectStatus;
-  deadline?: string;
-};
-
-type Meeting = {
-  meeting_id: string;
-  meeting_name: string;
-  project_id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  repeat: string;
-  attendees: string[];
-};
-
-const TODAY = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
 const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
   draft:            { label: "Draft",            className: "bg-slate-100 text-slate-500" },
@@ -47,6 +30,11 @@ function StatusBadge({ status }: { status: ProjectStatus }) {
 function formatDisplayDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function formatDisplayTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 function SearchIcon() {
@@ -103,16 +91,32 @@ function SectionHeader({ title, count, open, onToggle }: { title: string; count:
 
 export default function InfoEditPage() {
   const router = useRouter();
+  const { groupId } = useLiff();
+  const lineGroupId = groupId ?? DEV_GROUP_ID;
   const [query, setQuery] = useState("");
   const [showPastProjects, setShowPastProjects] = useState(false);
   const [showPastMeetings, setShowPastMeetings] = useState(false);
+  const [projects, setProjects] = useState<GroupProject[]>([]);
+  const [meetings, setMeetings] = useState<GroupMeeting[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const projects: Project[] = mockProjects as Project[];
-  const meetings: Meeting[] = mockMeetings as Meeting[];
+  useEffect(() => {
+    Promise.all([
+      getGroupProjects(lineGroupId).then((res) => setProjects(res.projects)),
+      getGroupMeetings(lineGroupId).then((res) => setMeetings(res.meetings)),
+    ])
+      .catch((err) => console.error("Failed to load data:", err))
+      .finally(() => setLoading(false));
+  }, [lineGroupId]);
+
+  const now = new Date();
+
+  const STATUS_ORDER: Record<string, number> = { approved: 0, waiting_approval: 1, draft: 2 };
 
   const activeProjects = useMemo(() =>
     projects.filter((p) => p.project_status !== "done" &&
-      p.project_name.toLowerCase().includes(query.toLowerCase())),
+      (p.project_name || "").toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => (STATUS_ORDER[a.project_status] ?? 9) - (STATUS_ORDER[b.project_status] ?? 9)),
     [projects, query]);
 
   const pastProjects = useMemo(() =>
@@ -121,19 +125,16 @@ export default function InfoEditPage() {
     [projects, query]);
 
   const upcomingMeetings = useMemo(() =>
-    meetings.filter((m) => m.date >= TODAY &&
-      m.meeting_name.toLowerCase().includes(query.toLowerCase()))
-      .sort((a, b) => a.date.localeCompare(b.date)),
+    meetings.filter((m) => new Date(m.meeting_time) >= now &&
+      m.meeting_title.toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => a.meeting_time.localeCompare(b.meeting_time)),
     [meetings, query]);
 
   const pastMeetings = useMemo(() =>
-    meetings.filter((m) => m.date < TODAY &&
-      m.meeting_name.toLowerCase().includes(query.toLowerCase()))
-      .sort((a, b) => b.date.localeCompare(a.date)), // newest first
+    meetings.filter((m) => new Date(m.meeting_time) < now &&
+      m.meeting_title.toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => b.meeting_time.localeCompare(a.meeting_time)),
     [meetings, query]);
-
-  const getProjectName = (id: string) =>
-    projects.find((p) => p.project_id === id)?.project_name ?? "—";
 
   return (
     <div className="flex flex-col min-h-dvh bg-white">
@@ -186,14 +187,14 @@ export default function InfoEditPage() {
                       <FolderIcon />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-black truncate">{project.project_name}</span>
-                      {project.deadline && (
-                        <span className="text-xs text-santi-muted">Due {formatDisplayDate(project.deadline)}</span>
+                      <span className="font-bold text-black truncate">{project.project_name || "Untitled Project"}</span>
+                      {project.final_due_date && (
+                        <span className="text-xs text-santi-muted">Due {formatDisplayDate(project.final_due_date)}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <StatusBadge status={project.project_status} />
+                    <StatusBadge status={project.project_status as ProjectStatus} />
                     <ChevronRightIcon />
                   </div>
                 </button>
@@ -224,14 +225,14 @@ export default function InfoEditPage() {
                         <FolderIcon faded />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-black truncate">{project.project_name}</span>
-                        {project.deadline && (
-                          <span className="text-xs text-santi-muted">Ended {formatDisplayDate(project.deadline)}</span>
+                        <span className="font-bold text-black truncate">{project.project_name || "Untitled Project"}</span>
+                        {project.final_due_date && (
+                          <span className="text-xs text-santi-muted">Ended {formatDisplayDate(project.final_due_date)}</span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <StatusBadge status={project.project_status} />
+                      <StatusBadge status={project.project_status as ProjectStatus} />
                       <ChevronRightIcon />
                     </div>
                   </button>
@@ -259,11 +260,11 @@ export default function InfoEditPage() {
                       <CalendarIcon />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-bold text-black">{meeting.meeting_name}</span>
+                      <span className="font-bold text-black">{meeting.meeting_title}</span>
                       <span className="text-xs text-santi-muted font-medium">
-                        {formatDisplayDate(meeting.date)}, {meeting.start_time}
+                        {formatDisplayDate(meeting.meeting_time)}, {formatDisplayTime(meeting.meeting_time)}
                         {" · "}
-                        {getProjectName(meeting.project_id)}
+                        {meeting.project_name}
                       </span>
                     </div>
                   </div>
@@ -296,11 +297,11 @@ export default function InfoEditPage() {
                         <CalendarIcon faded />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-black">{meeting.meeting_name}</span>
+                        <span className="font-bold text-black">{meeting.meeting_title}</span>
                         <span className="text-xs text-santi-muted font-medium">
-                          {formatDisplayDate(meeting.date)}, {meeting.start_time}
+                          {formatDisplayDate(meeting.meeting_time)}, {formatDisplayTime(meeting.meeting_time)}
                           {" · "}
-                          {getProjectName(meeting.project_id)}
+                          {meeting.project_name}
                         </span>
                       </div>
                     </div>

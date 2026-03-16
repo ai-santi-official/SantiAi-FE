@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MeetingHeader } from "@/components/meeting/MeetingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
 import { CalendarIcon, ChevronRightIcon } from "@/components/icons";
-import mockMembers from "@/utils/mock/group-members.json";
-import mockProjects from "@/utils/mock/projects.json";
+import { useLiff } from "@/provider/LiffProvider";
+import { getGroupMembers } from "@/utils/getGroupMembers";
+import { apiFetch } from "@/utils/api";
 
-type Member = { line_user_id: string; display_name: string; picture_url: string };
+const DEV_GROUP_ID = "Cgroup_shared_001";
+
+type Member = { line_user_id: string; display_name: string; picture_url: string | null };
 
 const REPEAT_OPTIONS = [
   { label: "None", value: "none" },
@@ -60,8 +63,10 @@ function GroupIcon({ className }: { className?: string }) {
 export default function MeetingDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { groupId } = useLiff();
   const projectId = searchParams.get("projectId") ?? "";
-  const project = mockProjects.find((p) => p.project_id === projectId);
+  const projectName = searchParams.get("projectName") ?? "";
+  const lineGroupId = groupId ?? DEV_GROUP_ID;
 
   const [meetingName, setMeetingName] = useState("");
   const [date, setDate] = useState("");
@@ -70,8 +75,22 @@ export default function MeetingDetailsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
 
-  const members: Member[] = mockMembers.members as Member[];
+  useEffect(() => {
+    getGroupMembers(lineGroupId)
+      .then((res) =>
+        setMembers(
+          res.members.map((m) => ({
+            line_user_id: m.line_user_id,
+            display_name: m.display_name ?? "Unknown",
+            picture_url: m.picture_url,
+          }))
+        )
+      )
+      .catch((err) => console.error("Failed to load members:", err));
+  }, [lineGroupId]);
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
   const toggleSelectAll = () => {
@@ -251,7 +270,7 @@ export default function MeetingDetailsPage() {
 
               <div className="flex flex-col border-b border-santi-secondary/50 pb-3">
                 <span className="text-xs uppercase tracking-wider text-santi-muted font-bold">Project</span>
-                <span className="text-black font-semibold">{project?.project_name ?? "—"}</span>
+                <span className="text-black font-semibold">{projectName || "—"}</span>
               </div>
 
               <div className="flex justify-between border-b border-santi-secondary/50 pb-3">
@@ -294,11 +313,31 @@ export default function MeetingDetailsPage() {
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => {
-                  console.log("Create meeting", { meetingName, projectId, date, timeRange, repeat, attendees: [...selectedIds] });
-                  setShowConfirm(false);
+                disabled={submitting}
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    const res = await apiFetch(`/api/v1/meetings/${projectId}`, {
+                      method: "POST",
+                      body: JSON.stringify({
+                        meeting_name: meetingName,
+                        date,
+                        start_time: formatTime(timeRange.startHour, timeRange.startMinute),
+                        end_time: formatTime(timeRange.endHour, timeRange.endMinute),
+                        repeat,
+                        attendee_line_user_ids: [...selectedIds],
+                      }),
+                    });
+                    if (!res.ok) throw new Error(`API error: ${res.status}`);
+                    setShowConfirm(false);
+                    router.push("/info-edit");
+                  } catch (err) {
+                    console.error("Failed to create meeting:", err);
+                  } finally {
+                    setSubmitting(false);
+                  }
                 }}
-                className="w-full h-14 bg-santi-primary text-black font-bold rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="w-full h-14 bg-santi-primary text-black font-bold rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <span>Create Meeting</span>
                 <CalendarIcon className="w-5 h-5" />
