@@ -48,6 +48,13 @@ export default function MemberPreferencesPage() {
         if (!res.ok) throw new Error(`Failed to update preferences: ${res.status}`);
       }
 
+      // Trigger AI plan generation
+      const planRes = await apiFetch(`/api/v1/ai/plans/projects/${projectId}`, {
+        method: "POST",
+        body: JSON.stringify({ change_type: "ai_proposal" }),
+      });
+      if (!planRes.ok) throw new Error(`Failed to generate AI plan: ${planRes.status}`);
+
       router.push(`/onboarding/plan-proposal?project_id=${projectId}`);
     } catch (err) {
       console.error("Failed to update preferences:", err);
