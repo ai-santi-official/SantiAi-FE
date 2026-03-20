@@ -6,6 +6,7 @@ import { useLiff } from "@/provider/LiffProvider";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { BottomNav } from "@/components/BottomNav";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
@@ -32,10 +33,25 @@ function CheckIcon({ className }: { className?: string }) {
 export default function OnboardingPage() {
   const router = useRouter();
   const { profile, groupId } = useLiff();
-  const { setMemberIds, setProjectId } = useOnboarding();
+  const { memberIds, projectId, projectDetail, setMemberIds, setProjectId } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(memberIds));
   const [submitting, setSubmitting] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+
+  const hasProjectDetails =
+    projectDetail.name.trim() !== "" ||
+    projectDetail.deadline !== "" ||
+    projectDetail.detail.trim() !== "" ||
+    projectDetail.deliverables.trim() !== "";
+
+  const handleBack = () => {
+    if (hasProjectDetails) {
+      setShowExitDialog(true);
+    } else {
+      router.push("/info-edit");
+    }
+  };
 
   useEffect(() => {
     getGroupMembers(groupId ?? "Cgroup_shared_001")
@@ -69,8 +85,16 @@ export default function OnboardingPage() {
   const handleContinue = async () => {
     setSubmitting(true);
     try {
-      const lineGroupId = groupId ?? "Cgroup_shared_001";
       const ids = Array.from(selectedIds);
+
+      // If project already exists (user navigated back), just update selection and go forward
+      if (projectId) {
+        setMemberIds(ids);
+        router.push("/onboarding/project-detail");
+        return;
+      }
+
+      const lineGroupId = groupId ?? "Cgroup_shared_001";
 
       // Resolve creator: match LIFF profile to user_id, fallback to first selected
       const creator = profile
@@ -102,7 +126,7 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <OnboardingHeader step={1} totalSteps={3} />
+      <OnboardingHeader step={1} totalSteps={3} onBack={handleBack} />
 
       <main className="px-6 pb-6 space-y-3 relative -mt-12 bg-white rounded-t-[48px] pt-8">
         <section className="mb-6">
@@ -175,6 +199,31 @@ export default function OnboardingPage() {
         withNav
       />
       <BottomNav />
+
+      {showExitDialog && (
+        <ConfirmDialog
+          title="Discard project?"
+          message="You have unsaved project details. Do you want to discard them or save as a draft?"
+          confirmLabel="Discard"
+          cancelLabel="Save draft"
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={async () => {
+            setShowExitDialog(false);
+            if (projectId) {
+              try {
+                await apiFetch(`/api/v1/projects/${projectId}`, { method: "DELETE" });
+              } catch (err) {
+                console.error("Failed to delete project:", err);
+              }
+            }
+            router.push("/info-edit");
+          }}
+          onCancel={() => {
+            setShowExitDialog(false);
+            router.push("/info-edit");
+          }}
+        />
+      )}
     </>
   );
 }
