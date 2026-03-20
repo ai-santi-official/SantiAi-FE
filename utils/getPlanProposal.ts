@@ -62,31 +62,60 @@ export async function getPlanProposal(projectId: string): Promise<PlanProposalRe
 
   const snapshot = plan_version.snapshot ?? {};
 
-  // Normalize tasks — handle both AI format (start_time/end_time/assignee_user_ids)
-  // and FE format (start_date/end_date/assigned_to)
+  // Build a name→user_id lookup from project members so we can resolve
+  // assignee/attendee names coming from n8n into user_ids the FE expects.
+  const memberList: PlanMember[] = members ?? [];
+  const nameToId = new Map<string, string>();
+  for (const m of memberList) {
+    if (m.display_name) nameToId.set(m.display_name.toLowerCase(), m.user_id);
+  }
+  const resolveIds = (arr: string[]): string[] =>
+    arr.map((v) => nameToId.get(v.toLowerCase()) ?? v);
+
+  // Normalize tasks — handle n8n format (task_id/task_title/task_description/due_date/task_assignees),
+  // AI format (start_time/end_time/assignee_user_ids), and FE format (id/title/start_date/end_date/assigned_to)
   const rawTasks: any[] = snapshot.tasks ?? [];
   const tasks: PlanTask[] = rawTasks.map((t: any, i: number) => ({
-    id: t.id ?? `task-${i}`,
-    title: t.title ?? '',
-    description: t.description ?? '',
+    id: t.id ?? t.task_id ?? `task-${i}`,
+    title: t.title ?? t.task_title ?? '',
+    description: t.description ?? t.task_description ?? '',
     start_date: t.start_date ?? (t.start_time ? t.start_time.slice(0, 10) : ''),
-    end_date: t.end_date ?? (t.end_time ? t.end_time.slice(0, 10) : ''),
-    assigned_to: t.assigned_to ?? t.assignee_user_ids ?? [],
+    end_date: t.end_date ?? t.due_date ?? (t.end_time ? t.end_time.slice(0, 10) : ''),
+    assigned_to: resolveIds(t.assigned_to ?? t.assignee_user_ids ?? t.task_assignees ?? []),
     status: t.status ?? 'todo',
   }));
 
-  // Normalize meetings — handle both AI format (meeting_title/meeting_time/attendee_user_ids)
-  // and FE format (title/datetime/participants)
+  // Normalize meetings — handle n8n format (meeting_id/meeting_title/meeting_detail/meeting_date+start_time+end_time/meeting_attendees),
+  // AI format (meeting_time/attendee_user_ids), and FE format (id/title/datetime/participants)
   const rawMeetings: any[] = snapshot.meetings ?? [];
-  const meetings: PlanMeeting[] = rawMeetings.map((m: any, i: number) => ({
-    id: m.id ?? `meeting-${i}`,
-    title: m.title ?? m.meeting_title ?? '',
-    datetime: m.datetime ?? m.meeting_time ?? '',
-    duration_minutes: m.duration_minutes ?? 60,
-    recurrence: m.recurrence ?? 'none',
-    participants: m.participants ?? m.attendee_user_ids ?? [],
-    notes: m.notes ?? '',
-  }));
+  const meetings: PlanMeeting[] = rawMeetings.map((m: any, i: number) => {
+    // Compute datetime: prefer existing datetime/meeting_time, else build from meeting_date + start_time
+    let datetime = m.datetime ?? m.meeting_time ?? '';
+    if (!datetime && m.meeting_date) {
+      datetime = m.start_time
+        ? `${m.meeting_date}T${m.start_time}:00`
+        : `${m.meeting_date}T00:00:00`;
+    }
+
+    // Compute duration from start_time/end_time if duration_minutes is absent
+    let duration = m.duration_minutes;
+    if (duration == null && m.start_time && m.end_time) {
+      const [sh, sm] = m.start_time.split(':').map(Number);
+      const [eh, em] = m.end_time.split(':').map(Number);
+      duration = (eh * 60 + em) - (sh * 60 + sm);
+      if (duration <= 0) duration = 60;
+    }
+
+    return {
+      id: m.id ?? m.meeting_id ?? `meeting-${i}`,
+      title: m.title ?? m.meeting_title ?? '',
+      datetime,
+      duration_minutes: duration ?? 60,
+      recurrence: m.recurrence ?? 'none',
+      participants: resolveIds(m.participants ?? m.attendee_user_ids ?? m.meeting_attendees ?? []),
+      notes: m.notes ?? m.meeting_detail ?? '',
+    };
+  });
 
   return {
     project: {
@@ -95,12 +124,12 @@ export async function getPlanProposal(projectId: string): Promise<PlanProposalRe
       deadline: project.final_due_date ?? '',
       detail: project.project_detail ?? '',
       deliverables: project.final_deliverable ?? '',
-      members: members ?? [],
+      members: memberList,
     },
     plan_version: {
       id: plan_version.plan_version_id,
       version: plan_version.version_number,
-      ai_reasoning: snapshot.ai_reasoning ?? '',
+      ai_reasoning: snapshot.ai_reasoning ?? snapshot.plan_rationale ?? '',
       tasks,
       meetings,
     },
