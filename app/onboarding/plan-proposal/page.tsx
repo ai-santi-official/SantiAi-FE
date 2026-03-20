@@ -197,8 +197,9 @@ type EditingItem =
   | { type: "meeting"; id: string }
   | null;
 
-function buildSnapshot(tasks: ColoredTask[], meetings: PlanMeeting[]) {
+function buildSnapshot(tasks: ColoredTask[], meetings: PlanMeeting[], aiReasoning?: string) {
   return {
+    ai_reasoning: aiReasoning ?? "",
     tasks: tasks.map((t) => ({
       id: t.id,
       title: t.title,
@@ -265,11 +266,25 @@ export default function PlanProposalPage() {
   const savePlanVersion = async (nextTasks: ColoredTask[], nextMeetings: PlanMeeting[]) => {
     if (!projectId) return;
     try {
-      const snapshot = buildSnapshot(nextTasks, nextMeetings);
-      await apiFetch(`/api/v1/ai/plans/projects/${projectId}`, {
+      const snapshot = buildSnapshot(nextTasks, nextMeetings, data?.plan_version.ai_reasoning);
+      const res = await apiFetch(`/api/v1/ai/plans/projects/${projectId}`, {
         method: "POST",
         body: JSON.stringify({ change_type: "manual_edit", snapshot }),
       });
+      if (res.ok) {
+        const result = await res.json();
+        // Update version metadata without resetting task/meeting state
+        if (result.plan_version && data) {
+          setData({
+            ...data,
+            plan_version: {
+              ...data.plan_version,
+              id: result.plan_version.plan_version_id,
+              version: result.plan_version.version_number,
+            },
+          });
+        }
+      }
     } catch (err) {
       console.error("Failed to save plan version:", err);
     }
@@ -311,30 +326,58 @@ export default function PlanProposalPage() {
     });
   };
 
-  const normalizeSnapshot = (snapshot: any): { tasks: PlanTask[]; meetings: PlanMeeting[] } => {
+  const normalizeSnapshot = (snapshot: any): { tasks: PlanTask[]; meetings: PlanMeeting[]; ai_reasoning: string } => {
     const rawTasks: any[] = snapshot?.tasks ?? [];
     const rawMeetings: any[] = snapshot?.meetings ?? [];
+
+    // Build name→user_id lookup for resolving n8n assignee/attendee names
+    const memberList = data?.project.members ?? [];
+    const nameToId = new Map<string, string>();
+    for (const m of memberList) {
+      if (m.display_name) nameToId.set(m.display_name.toLowerCase(), m.user_id);
+    }
+    const resolveIds = (arr: string[]): string[] =>
+      arr.map((v) => nameToId.get(v.toLowerCase()) ?? v);
+
     return {
+      ai_reasoning: snapshot?.ai_reasoning ?? snapshot?.plan_rationale ?? "",
       tasks: rawTasks.map((t: any, i: number) => ({
-        id: t.id ?? `task-${i}`,
-        title: t.title ?? "",
-        description: t.description ?? "",
+        id: t.id ?? t.task_id ?? `task-${i}`,
+        title: t.title ?? t.task_title ?? "",
+        description: t.description ?? t.task_description ?? "",
         start_date: t.start_date ?? (t.start_time ? t.start_time.slice(0, 10) : ""),
-        end_date: t.end_date ?? (t.end_time ? t.end_time.slice(0, 10) : ""),
-        assigned_to: t.assigned_to ?? t.assignee_user_ids ?? [],
+        end_date: t.end_date ?? t.due_date ?? (t.end_time ? t.end_time.slice(0, 10) : ""),
+        assigned_to: resolveIds(t.assigned_to ?? t.assignee_user_ids ?? t.task_assignees ?? []),
         status: t.status ?? "todo",
       })),
-      meetings: rawMeetings.map((m: any, i: number) => ({
-        id: m.id ?? `meeting-${i}`,
-        title: m.title ?? m.meeting_title ?? "",
-        datetime: m.datetime ?? m.meeting_time ?? "",
-        duration_minutes: m.duration_minutes ?? 60,
-        recurrence: m.recurrence ?? "none",
-        participants: m.participants ?? m.attendee_user_ids ?? [],
-        notes: m.notes ?? "",
-      })),
+      meetings: rawMeetings.map((m: any, i: number) => {
+        let datetime = m.datetime ?? m.meeting_time ?? "";
+        if (!datetime && m.meeting_date) {
+          datetime = m.start_time
+            ? `${m.meeting_date}T${m.start_time}:00`
+            : `${m.meeting_date}T00:00:00`;
+        }
+        let duration = m.duration_minutes;
+        if (duration == null && m.start_time && m.end_time) {
+          const [sh, sm] = m.start_time.split(":").map(Number);
+          const [eh, em] = m.end_time.split(":").map(Number);
+          duration = (eh * 60 + em) - (sh * 60 + sm);
+          if (duration <= 0) duration = 60;
+        }
+        return {
+          id: m.id ?? m.meeting_id ?? `meeting-${i}`,
+          title: m.title ?? m.meeting_title ?? "",
+          datetime,
+          duration_minutes: duration ?? 60,
+          recurrence: m.recurrence ?? "none",
+          participants: resolveIds(m.participants ?? m.attendee_user_ids ?? m.meeting_attendees ?? []),
+          notes: m.notes ?? m.meeting_detail ?? "",
+        };
+      }),
     };
   };
+
+  const [previewReasoning, setPreviewReasoning] = useState("");
 
   const handlePreviewVersion = (version: PlanVersionSummary) => {
     // Save current state so we can restore on "Back"
@@ -346,6 +389,7 @@ export default function PlanProposalPage() {
     const normalized = normalizeSnapshot(version.snapshot);
     setTasks(normalized.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
     setMeetings(normalized.meetings);
+    setPreviewReasoning(normalized.ai_reasoning);
     setPreviewVersion(version);
     setExpandedIds(new Set());
 
@@ -362,6 +406,7 @@ export default function PlanProposalPage() {
     setTasks(savedTasks);
     setMeetings(savedMeetings);
     setPreviewVersion(null);
+    setPreviewReasoning("");
     setExpandedIds(new Set());
 
     const earliest = [...savedTasks].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
@@ -538,7 +583,7 @@ export default function PlanProposalPage() {
             <SparklesIcon className="w-4 h-4 text-black/60 shrink-0 mt-0.5" />
             <p className="text-xs text-black/70 leading-relaxed">
               {isPreviewMode
-                ? previewVersion.snapshot?.ai_reasoning ?? plan_version.ai_reasoning
+                ? previewReasoning || plan_version.ai_reasoning
                 : plan_version.ai_reasoning}
             </p>
           </div>
