@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PlanTask, PlanMember } from "@/utils/getPlanProposal";
+import { DatePicker } from "@/components/ui/DatePicker";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 type Props = {
@@ -18,6 +19,22 @@ const STATUS_OPTIONS: { label: string; value: PlanTask["status"] }[] = [
   { label: "Done",   value: "done"  },
 ];
 
+// Convert "YYYY-MM-DD" to ISO string for DatePicker, or return ""
+function dateToIso(d: string): string {
+  if (!d) return "";
+  // If already ISO-ish, return as-is
+  if (d.includes("T")) return d;
+  return new Date(d + "T00:00:00").toISOString();
+}
+
+// Extract "YYYY-MM-DD" from ISO string
+function isoToDate(iso: string): string {
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
+
+const isCreate = (task: PlanTask) => !task.title && !task.start_date && !task.end_date;
+
 export default function EditTaskSheet({ task, members, showStatus = false, onSave, onClose }: Props) {
   const [title, setTitle]           = useState(task.title);
   const [description, setDescription] = useState(task.description);
@@ -27,6 +44,8 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
   const [status, setStatus]         = useState<PlanTask["status"]>(task.status);
 
   const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
+
+  const creating = isCreate(task);
 
   const isDirty =
     title !== task.title ||
@@ -58,19 +77,22 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
     setConfirm(null);
   };
 
+  const canSave = title.trim() !== "";
+
   return (
     <>
       <div className="fixed inset-0 z-50 flex flex-col justify-end">
         <div className="absolute inset-0 bg-black/40" onClick={handleCancelClick} />
         <div className="relative bg-white rounded-t-3xl px-6 pt-5 pb-10 space-y-4 max-h-[85dvh] overflow-y-auto">
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-2" />
-          <h2 className="text-base font-bold text-black">Edit Task</h2>
+          <h2 className="text-base font-bold text-black">{creating ? "Create Task" : "Edit Task"}</h2>
 
           <div className="space-y-3">
             <div>
               <label className="text-xs font-semibold text-black/60 mb-1 block">Title</label>
               <input
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary"
+                placeholder="e.g. Research competitors"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
@@ -81,6 +103,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
               <textarea
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary resize-none"
                 rows={3}
+                placeholder="What needs to be done?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -88,21 +111,19 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
 
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date</label>
-                <input
-                  type="date"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date & Time</label>
+                <DatePicker
+                  value={dateToIso(startDate)}
+                  onChange={(iso) => setStartDate(isoToDate(iso))}
+                  placeholder="Select start"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">End Date</label>
-                <input
-                  type="date"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                <label className="text-xs font-semibold text-black/60 mb-1 block">End Date & Time</label>
+                <DatePicker
+                  value={dateToIso(endDate)}
+                  onChange={(iso) => setEndDate(isoToDate(iso))}
+                  placeholder="Select end"
                 />
               </div>
             </div>
@@ -161,9 +182,10 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
             </button>
             <button
               onClick={handleSaveClick}
-              className="flex-1 py-3 rounded-santi bg-santi-primary text-sm font-bold text-black"
+              disabled={!canSave}
+              className="flex-1 py-3 rounded-santi bg-santi-primary text-sm font-bold text-black disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Save
+              {creating ? "Create" : "Save"}
             </button>
           </div>
         </div>
@@ -182,9 +204,9 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
       )}
       {confirm === "save" && (
         <ConfirmDialog
-          title="Save changes?"
-          message="Are you sure you want to save the changes to this task?"
-          confirmLabel="Save"
+          title={creating ? "Create task?" : "Save changes?"}
+          message={creating ? "Are you sure you want to create this task?" : "Are you sure you want to save the changes to this task?"}
+          confirmLabel={creating ? "Create" : "Save"}
           cancelLabel="Keep editing"
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}

@@ -13,15 +13,13 @@ import {
   BellIcon,
   SparklesIcon,
   CalendarDotIcon,
-  HomeIcon,
-  TasksIcon,
-  CalendarIcon,
-  ProfileIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   PencilIcon,
   MeetingIcon,
+  TrashIcon,
+  PlusIcon,
 } from "@/components/icons";
 import EditTaskSheet from "@/components/onboarding/EditTaskSheet";
 import EditMeetingSheet from "@/components/onboarding/EditMeetingSheet";
@@ -235,8 +233,11 @@ export default function PlanProposalPage() {
   const [savedMeetings, setSavedMeetings] = useState<PlanMeeting[]>([]);
   const [revertTarget, setRevertTarget] = useState<PlanVersionSummary | null>(null);
   const [reverting, setReverting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showPublished, setShowPublished] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   // Calendar display month — initialised to the earliest task month when data loads
   const [calDisplayYear, setCalDisplayYear] = useState(new Date().getFullYear());
   const [calDisplayMonth, setCalDisplayMonth] = useState(new Date().getMonth());
@@ -304,26 +305,61 @@ export default function PlanProposalPage() {
     savePlanVersion(tasks, next);
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+
+  const handleDeleteTask = (taskId: string) => {
+    const next = tasks.filter((t) => t.id !== taskId);
+    setTasks(next);
+    setDeleteTarget(null);
+    setExpandedIds((prev) => { const s = new Set(prev); s.delete(taskId); return s; });
+    savePlanVersion(next, meetings);
+  };
+
+  const handleCreateTask = (newTask: PlanTask) => {
+    const colored: ColoredTask = { ...newTask, color: getTaskColor(tasks.length) };
+    const next = [...tasks, colored];
+    setTasks(next);
+    setShowCreateTask(false);
+    savePlanVersion(next, meetings);
+  };
+
   const projectId = searchParams.get("project_id");
 
-  const handlePublish = () => {
-    if (!projectId) return;
-    router.push(`/onboarding/plan-proposal?project_id=${projectId}&mode=view`);
+  const handlePublish = async () => {
+    if (!projectId || !data) return;
+    setPublishing(true);
+    try {
+      const res = await apiFetch(`/api/v1/projects/${projectId}/publish`, {
+        method: "POST",
+        body: JSON.stringify({ plan_version_id: data.plan_version.id }),
+      });
+      if (!res.ok) throw new Error(`Failed to publish: ${res.status}`);
+      setShowPublished(true);
+    } catch (err) {
+      console.error("Failed to publish project:", err);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const loadPlan = (id: string) => {
-    getPlanProposal(id).then((d) => {
-      setData(d);
-      setTasks(d.plan_version.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
-      setMeetings(d.plan_version.meetings);
-      const earliest = [...d.plan_version.tasks]
-        .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
-      if (earliest) {
-        const date = new Date(earliest.start_date + "T00:00:00");
-        setCalDisplayYear(date.getFullYear());
-        setCalDisplayMonth(date.getMonth());
-      }
-    });
+    getPlanProposal(id)
+      .then((d) => {
+        setData(d);
+        setTasks(d.plan_version.tasks.map((t, i) => ({ ...t, color: getTaskColor(i) })));
+        setMeetings(d.plan_version.meetings);
+        const earliest = [...d.plan_version.tasks]
+          .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+        if (earliest) {
+          const date = new Date(earliest.start_date + "T00:00:00");
+          setCalDisplayYear(date.getFullYear());
+          setCalDisplayMonth(date.getMonth());
+        }
+      })
+      .catch(() => {
+        setLoadError(true);
+      });
   };
 
   const normalizeSnapshot = (snapshot: any): { tasks: PlanTask[]; meetings: PlanMeeting[]; ai_reasoning: string } => {
@@ -447,7 +483,40 @@ export default function PlanProposalPage() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-dvh bg-santi-secondary">
-        <p className="text-sm text-black/60">Loading plan...</p>
+        {loadError ? (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-sm overflow-hidden">
+              <div className="bg-santi-secondary px-6 pt-8 pb-6 text-center">
+                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+                  <SparklesIcon className="w-7 h-7 text-santi-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-black">No Plan Yet</h3>
+              </div>
+              <div className="px-6 pt-4 pb-6 text-center">
+                <p className="text-sm text-black/60 leading-relaxed mb-6">
+                  This project doesn&apos;t have a plan yet. Fill in the project details and let Santi AI generate one for you.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => router.push(`/onboarding/project-detail?project_id=${projectId}`)}
+                    className="w-full py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+                  >
+                    Set Up Project
+                  </button>
+                  <button
+                    onClick={() => router.back()}
+                    className="w-full py-3.5 rounded-santi border-2 border-slate-200 font-bold text-sm text-black/60 bg-white active:bg-slate-50 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-black/60">Loading plan...</p>
+        )}
       </div>
     );
   }
@@ -528,9 +597,11 @@ export default function PlanProposalPage() {
       {/* Header */}
       <header className="bg-santi-secondary pt-10 pb-20 px-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-black">Santi</h1>
-            <p className="text-sm text-black/60 mt-0.5">Project Plan</p>
+          <button onClick={() => router.back()} className="p-1 text-black" aria-label="Go back">
+            <ChevronLeftIcon className="w-6 h-6" />
+          </button>
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-black">Project Plan</h1>
           </div>
           <button className="relative w-10 h-10 flex items-center justify-center rounded-full">
             <BellIcon className="w-6 h-6 text-black" />
@@ -757,7 +828,17 @@ export default function PlanProposalPage() {
                               {formatShortDate(task.start_date)} – {formatShortDate(task.end_date)}
                             </span>
                           </div>
-                          <AssigneeAvatars ids={task.assigned_to} members={project.members} />
+                          <div className="flex items-center justify-between mt-2">
+                            <AssigneeAvatars ids={task.assigned_to} members={project.members} />
+                            {!isPreviewMode && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(task.id); }}
+                                className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                              >
+                                <TrashIcon className="w-4 h-4 text-red-400" />
+                              </button>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
@@ -825,6 +906,17 @@ export default function PlanProposalPage() {
               {showAll ? "Show less" : `View ${hiddenCount} more card${hiddenCount > 1 ? "s" : ""}`}
             </button>
           )}
+
+          {/* Create Task */}
+          {!isPreviewMode && (
+            <button
+              onClick={() => setShowCreateTask(true)}
+              className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create Task
+            </button>
+          )}
         </section>
       </main>
 
@@ -853,6 +945,37 @@ export default function PlanProposalPage() {
         ) : null;
       })()}
 
+      {/* Create Task Sheet — reuse EditTaskSheet with empty task */}
+      {showCreateTask && (
+        <EditTaskSheet
+          task={{
+            id: `task-${Date.now()}`,
+            title: "",
+            description: "",
+            start_date: "",
+            end_date: "",
+            assigned_to: [],
+            status: "todo",
+          }}
+          members={project.members}
+          onSave={handleCreateTask}
+          onClose={() => setShowCreateTask(false)}
+        />
+      )}
+
+      {/* Delete Task Confirmation */}
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete task?"
+          message="This task will be removed from the plan. This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={() => handleDeleteTask(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       {showVersionHistory && projectId && (
         <VersionHistorySheet
           projectId={projectId}
@@ -875,6 +998,35 @@ export default function PlanProposalPage() {
           onConfirm={handleRevertFromPreview}
           onCancel={() => setRevertTarget(null)}
         />
+      )}
+
+      {/* Published success modal */}
+      {showPublished && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-2xl shadow-lg w-full max-w-sm overflow-hidden">
+            <div className="bg-santi-secondary px-6 pt-8 pb-6 text-center">
+              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+                <SparklesIcon className="w-7 h-7 text-santi-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-black">Plan Published!</h3>
+            </div>
+            <div className="px-6 pt-4 pb-6 text-center">
+              <p className="text-sm text-black/60 leading-relaxed mb-6">
+                The approval link has been sent to your LINE group. Members can now review and approve the plan.
+              </p>
+              <button
+                onClick={() => {
+                  setShowPublished(false);
+                  router.push(`/onboarding/plan-proposal?project_id=${projectId}&mode=view`);
+                }}
+                className="w-full py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Fixed Bottom Bar */}
@@ -900,41 +1052,24 @@ export default function PlanProposalPage() {
             </>
           ) : (
             <>
-              <button className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors">
+              <button
+                onClick={() => router.push(`/onboarding/edit-with-ai?project_id=${projectId}`)}
+                className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
+              >
                 Edit with AI
               </button>
               <button
                 onClick={() => isViewMode ? router.back() : handlePublish()}
-                className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+                disabled={publishing}
+                className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all disabled:opacity-60"
               >
-                {isViewMode ? "Close" : "Publish"}
+                {isViewMode ? "Close" : publishing ? "Publishing..." : "Publish"}
               </button>
             </>
           )}
         </div>
 
-        {/* Tab Bar */}
-        <div
-          className="flex items-center justify-around px-6"
-          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <button className="flex flex-col items-center gap-0.5 text-santi-primary py-1 min-w-[48px]">
-            <HomeIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Home</span>
-          </button>
-          <button className="flex flex-col items-center gap-0.5 text-santi-muted py-1 min-w-[48px]">
-            <TasksIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Tasks</span>
-          </button>
-          <button className="flex flex-col items-center gap-0.5 text-santi-muted py-1 min-w-[48px]">
-            <CalendarIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Calendar</span>
-          </button>
-          <button className="flex flex-col items-center gap-0.5 text-santi-muted py-1 min-w-[48px]">
-            <ProfileIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Profile</span>
-          </button>
-        </div>
+        <div style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
       </div>
     </>
   );

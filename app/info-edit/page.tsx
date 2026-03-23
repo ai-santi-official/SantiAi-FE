@@ -89,6 +89,13 @@ function SectionHeader({ title, count, open, onToggle }: { title: string; count:
   );
 }
 
+function projectRoute(project: GroupProject): string {
+  if (project.project_status === "approved" || project.project_status === "done") {
+    return `/info-edit/project/${project.project_id}`;
+  }
+  return `/onboarding/plan-proposal?project_id=${project.project_id}&mode=view`;
+}
+
 export default function InfoEditPage() {
   const router = useRouter();
   const { groupId } = useLiff();
@@ -179,7 +186,7 @@ export default function InfoEditPage() {
               {activeProjects.map((project) => (
                 <button
                   key={project.project_id}
-                  onClick={() => router.push(`/onboarding/plan-proposal?projectId=${project.project_id}&mode=view`)}
+                  onClick={() => router.push(projectRoute(project))}
                   className="flex items-center justify-between p-4 bg-white rounded-santi border border-santi-muted/40 shadow-sm hover:border-santi-primary transition-colors text-left"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -217,7 +224,7 @@ export default function InfoEditPage() {
                 {pastProjects.map((project) => (
                   <button
                     key={project.project_id}
-                    onClick={() => router.push(`/onboarding/plan-proposal?projectId=${project.project_id}&mode=view`)}
+                    onClick={() => router.push(projectRoute(project))}
                     className="flex items-center justify-between p-4 bg-white rounded-santi border border-santi-muted/40 shadow-sm hover:border-santi-primary transition-colors text-left opacity-70"
                   >
                     <div className="flex items-center gap-3 min-w-0">

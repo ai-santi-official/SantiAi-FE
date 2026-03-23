@@ -1,37 +1,22 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
 import { ChevronRightIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import mockMeetings from "@/utils/mock/meetings.json";
-import mockMembers from "@/utils/mock/group-members.json";
+import { useLiff } from "@/provider/LiffProvider";
+import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
+import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 
-type Meeting = {
-  meeting_id: string;
-  meeting_name: string;
-  project_id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  repeat: string;
-  attendees: string[];
-};
-
-type Member = { line_user_id: string; display_name: string; picture_url: string };
+const DEV_GROUP_ID = "Cgroup_shared_001";
 
 const REPEAT_OPTIONS = [
   { label: "None", value: "none" },
   { label: "Weekly", value: "weekly" },
   { label: "Biweekly", value: "biweekly" },
 ] as const;
-
-function parseTime(t: string): { hour: number; minute: number } {
-  const [h, m] = t.split(":").map(Number);
-  return { hour: h, minute: m };
-}
 
 function pad(n: number) {
   return n.toString().padStart(2, "0");
@@ -87,47 +72,72 @@ export default function MeetingInfoEditPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
+  const { groupId } = useLiff();
+  const lineGroupId = groupId ?? DEV_GROUP_ID;
 
-  const meetings: Meeting[] = mockMeetings as Meeting[];
-  const meeting = meetings.find((m) => m.meeting_id === id);
+  const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const members: Member[] = mockMembers.members as Member[];
-
-  const startParsed = parseTime(meeting?.start_time ?? "09:00");
-  const endParsed = parseTime(meeting?.end_time ?? "10:00");
-
-  const [meetingName, setMeetingName] = useState(meeting?.meeting_name ?? "");
-  const [date, setDate] = useState(meeting?.date ?? "");
+  const [meetingName, setMeetingName] = useState("");
+  const [date, setDate] = useState("");
   const [timeRange, setTimeRange] = useState<TimeRange>({
-    startHour: startParsed.hour,
-    startMinute: startParsed.minute,
-    endHour: endParsed.hour,
-    endMinute: endParsed.minute,
+    startHour: 9, startMinute: 0, endHour: 10, endMinute: 0,
   });
-  const [repeat, setRepeat] = useState<"none" | "weekly" | "biweekly">(
-    (meeting?.repeat as "none" | "weekly" | "biweekly") ?? "none"
-  );
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(meeting?.attendees ?? [])
-  );
+  const [repeat, setRepeat] = useState<"none" | "weekly" | "biweekly">("none");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
 
-  const isDirty =
-    meetingName !== (meeting?.meeting_name ?? "") ||
-    date !== (meeting?.date ?? "") ||
-    repeat !== ((meeting?.repeat as "none" | "weekly" | "biweekly") ?? "none") ||
-    timeRange.startHour !== startParsed.hour ||
-    timeRange.startMinute !== startParsed.minute ||
-    timeRange.endHour !== endParsed.hour ||
-    timeRange.endMinute !== endParsed.minute ||
-    JSON.stringify([...selectedIds].sort()) !== JSON.stringify([...(meeting?.attendees ?? [])].sort());
+  // Fetch meeting + members on mount
+  useEffect(() => {
+    Promise.all([
+      getMeeting(id),
+      getGroupMembers(lineGroupId),
+    ])
+      .then(([meetingData, membersData]) => {
+        setMeeting(meetingData);
+        setMembers(membersData.members);
 
-  if (!meeting) {
+        // Initialize form state from API data
+        setMeetingName(meetingData.meeting_title);
+        const meetingDate = meetingData.meeting_time.slice(0, 10);
+        setDate(meetingDate);
+
+        const mt = new Date(meetingData.meeting_time);
+        const startH = mt.getHours();
+        const startM = mt.getMinutes();
+        const dur = meetingData.duration_minutes ?? 60;
+        const endTotal = startH * 60 + startM + dur;
+        setTimeRange({
+          startHour: startH,
+          startMinute: startM,
+          endHour: Math.floor(endTotal / 60),
+          endMinute: endTotal % 60,
+        });
+
+        setRepeat(meetingData.recurrence);
+        setSelectedIds(new Set(meetingData.attendees.map((a) => a.user_id)));
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id, lineGroupId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-dvh items-center justify-center">
+        <p className="text-santi-muted font-medium">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error || !meeting) {
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center gap-4 px-6">
-        <p className="text-santi-muted font-medium">Meeting not found.</p>
+        <p className="text-santi-muted font-medium">{error ?? "Meeting not found."}</p>
         <button onClick={() => router.back()} className="text-santi-primary font-semibold underline">
           Go back
         </button>
@@ -135,10 +145,28 @@ export default function MeetingInfoEditPage({
     );
   }
 
+  const origDate = meeting.meeting_time.slice(0, 10);
+  const origMt = new Date(meeting.meeting_time);
+  const origStartH = origMt.getHours();
+  const origStartM = origMt.getMinutes();
+  const origDur = meeting.duration_minutes ?? 60;
+  const origEndTotal = origStartH * 60 + origStartM + origDur;
+  const origAttendeeIds = meeting.attendees.map((a) => a.user_id).sort().join(",");
+
+  const isDirty =
+    meetingName !== meeting.meeting_title ||
+    date !== origDate ||
+    repeat !== meeting.recurrence ||
+    timeRange.startHour !== origStartH ||
+    timeRange.startMinute !== origStartM ||
+    timeRange.endHour !== Math.floor(origEndTotal / 60) ||
+    timeRange.endMinute !== origEndTotal % 60 ||
+    [...selectedIds].sort().join(",") !== origAttendeeIds;
+
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
   const toggleSelectAll = () => {
-    setSelectedIds(allSelected ? new Set() : new Set(members.map((m) => m.line_user_id)));
+    setSelectedIds(allSelected ? new Set() : new Set(members.map((m) => m.user_id)));
   };
 
   const toggleMember = (uid: string) => {
@@ -149,7 +177,7 @@ export default function MeetingInfoEditPage({
     });
   };
 
-  const canSave = meetingName.trim() !== "" && date !== "" && selectedIds.size > 0;
+  const canSave = meetingName.trim() !== "" && date !== "" && selectedIds.size > 0 && !saving;
 
   const handleBackClick = () => {
     if (isDirty) setConfirm("discard");
@@ -158,11 +186,31 @@ export default function MeetingInfoEditPage({
 
   const handleSaveClick = () => setConfirm("save");
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (confirm === "save") {
-      console.log("Save meeting", { id, meetingName, date, timeRange, repeat, attendees: [...selectedIds] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSaving(true);
+      try {
+        const startTimeStr = formatTime(timeRange.startHour, timeRange.startMinute);
+        const endTimeStr = formatTime(timeRange.endHour, timeRange.endMinute);
+
+        const updated = await updateMeeting(id, {
+          meeting_title: meetingName,
+          date,
+          start_time: startTimeStr,
+          end_time: endTimeStr,
+          recurrence: repeat,
+          attendee_user_ids: [...selectedIds],
+        });
+
+        setMeeting(updated);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } catch (err) {
+        console.error("Failed to save meeting:", err);
+        setError("Failed to save meeting. Please try again.");
+      } finally {
+        setSaving(false);
+      }
     } else {
       router.back();
     }
@@ -194,7 +242,7 @@ export default function MeetingInfoEditPage({
           </div>
           <div>
             <p className="text-xs text-santi-muted font-semibold uppercase tracking-wider">Meeting</p>
-            <p className="font-bold text-black">{meeting.meeting_name}</p>
+            <p className="font-bold text-black">{meeting.meeting_title}</p>
           </div>
         </div>
 
@@ -280,11 +328,11 @@ export default function MeetingInfoEditPage({
 
           {/* Member list */}
           {members.map((member) => {
-            const selected = selectedIds.has(member.line_user_id);
+            const selected = selectedIds.has(member.user_id);
             return (
               <button
-                key={member.line_user_id}
-                onClick={() => toggleMember(member.line_user_id)}
+                key={member.user_id}
+                onClick={() => toggleMember(member.user_id)}
                 className={`member-card w-full flex items-center gap-3 p-3 rounded-santi border ${
                   selected
                     ? "bg-santi-secondary border-2 border-santi-primary"
@@ -320,7 +368,7 @@ export default function MeetingInfoEditPage({
             className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <SaveIcon />
-            {saved ? "Saved!" : "Save Changes"}
+            {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
           </button>
         </div>
       </footer>

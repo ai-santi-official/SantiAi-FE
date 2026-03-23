@@ -1,23 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon, WarningIcon } from "@/components/icons";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
+import { getProject } from "@/utils/getProject";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
-  const { projectId, projectDetail, setProjectDetail, safeguardPassed, setSafeguardPassed } = useOnboarding();
+  const searchParams = useSearchParams();
+  const { projectId: ctxProjectId, projectDetail, setProjectDetail, setProjectId, safeguardPassed, setSafeguardPassed } = useOnboarding();
+
+  // Use context projectId, fall back to URL param
+  const urlProjectId = searchParams.get("project_id");
+  const projectId = ctxProjectId ?? urlProjectId;
+
   const [name, setName] = useState(projectDetail.name);
   const [deadline, setDeadline] = useState(projectDetail.deadline);
   const [detail, setDetail] = useState(projectDetail.detail);
   const [deliverables, setDeliverables] = useState(projectDetail.deliverables);
   const [submitting, setSubmitting] = useState(false);
   const [safeguardReason, setSafeguardReason] = useState<string | null>(null);
+  const [prefilling, setPrefilling] = useState(false);
+
+  // If context is empty but we have a project_id, fetch and pre-fill
+  useEffect(() => {
+    if (!projectId) return;
+
+    // Sync projectId into context if it came from URL
+    if (!ctxProjectId && urlProjectId) {
+      setProjectId(urlProjectId);
+    }
+
+    // If form fields are all empty, fetch from API
+    const isEmpty = !projectDetail.name && !projectDetail.deadline && !projectDetail.detail && !projectDetail.deliverables;
+    if (!isEmpty) return;
+
+    setPrefilling(true);
+    getProject(projectId)
+      .then((proj) => {
+        const fetched = {
+          name: proj.project_name ?? "",
+          deadline: proj.final_due_date ? proj.final_due_date.slice(0, 16) : "",
+          detail: proj.project_detail ?? "",
+          deliverables: proj.final_deliverable ?? "",
+        };
+        setName(fetched.name);
+        setDeadline(fetched.deadline);
+        setDetail(fetched.detail);
+        setDeliverables(fetched.deliverables);
+        setProjectDetail(fetched);
+      })
+      .catch((err) => console.error("Failed to prefill project:", err))
+      .finally(() => setPrefilling(false));
+  }, [projectId]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const syncProjectDetail = () => {
     setProjectDetail({ name, deadline, detail, deliverables });
@@ -115,6 +155,14 @@ export default function ProjectDetailPage() {
   const reasonLines = safeguardReason
     ? safeguardReason.split("\n").filter((line) => line.trim() !== "")
     : [];
+
+  if (prefilling) {
+    return (
+      <div className="flex flex-col min-h-dvh items-center justify-center">
+        <p className="text-santi-muted font-medium">Loading project details...</p>
+      </div>
+    );
+  }
 
   return (
     <>

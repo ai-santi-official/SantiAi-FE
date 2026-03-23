@@ -26,6 +26,8 @@ type Props = {
   onPreview: (version: PlanVersionSummary) => void;
   onRevert: (versionId: string) => void;
   onClose: () => void;
+  /** Override the revert API path suffix. Defaults to "revert". Use "revert-approved" for approved projects. */
+  revertAction?: string;
 };
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -44,7 +46,7 @@ function formatDateTime(iso: string) {
   });
 }
 
-export default function VersionHistorySheet({ projectId, currentVersionNumber, onPreview, onRevert, onClose }: Props) {
+export default function VersionHistorySheet({ projectId, currentVersionNumber, onPreview, onRevert, onClose, revertAction = "revert" }: Props) {
   const [versions, setVersions] = useState<PlanVersionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [revertTarget, setRevertTarget] = useState<PlanVersionSummary | null>(null);
@@ -63,7 +65,7 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
     setReverting(true);
     try {
       const res = await apiFetch(
-        `/api/v1/projects/${projectId}/plan-versions/${revertTarget.plan_version_id}/revert`,
+        `/api/v1/projects/${projectId}/plan-versions/${revertTarget.plan_version_id}/${revertAction}`,
         { method: "POST" }
       );
       if (!res.ok) throw new Error(`Failed to revert: ${res.status}`);
