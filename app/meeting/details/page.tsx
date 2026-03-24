@@ -67,7 +67,7 @@ export default function MeetingDetailsPage() {
 function MeetingDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { groupId } = useLiff();
+  const { groupId, isReady } = useLiff();
   const projectId = searchParams.get("projectId") ?? "";
   const projectName = searchParams.get("projectName") ?? "";
   const lineGroupId = groupId ?? DEV_GROUP_ID;
@@ -83,6 +83,7 @@ function MeetingDetailsContent() {
   const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
+    if (!isReady) return;
     getGroupMembers(lineGroupId)
       .then((res) =>
         setMembers(
@@ -94,7 +95,7 @@ function MeetingDetailsContent() {
         )
       )
       .catch((err) => console.error("Failed to load members:", err));
-  }, [lineGroupId]);
+  }, [isReady, lineGroupId]);
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
   const toggleSelectAll = () => {

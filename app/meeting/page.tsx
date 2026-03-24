@@ -27,7 +27,7 @@ function CheckCircleIcon() {
 
 export default function MeetingSelectProjectPage() {
   const router = useRouter();
-  const { groupId } = useLiff();
+  const { groupId, isReady } = useLiff();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [projects, setProjects] = useState<GroupProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +35,12 @@ export default function MeetingSelectProjectPage() {
   const lineGroupId = groupId ?? DEV_GROUP_ID;
 
   useEffect(() => {
+    if (!isReady) return;
     getGroupProjects(lineGroupId)
       .then((res) => setProjects(res.projects.filter((p) => p.project_status === "approved")))
       .catch((err) => console.error("Failed to load projects:", err))
       .finally(() => setLoading(false));
-  }, [lineGroupId]);
+  }, [isReady, lineGroupId]);
 
   const handleNext = () => {
     if (!selectedId) return;

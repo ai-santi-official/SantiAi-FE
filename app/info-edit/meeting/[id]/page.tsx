@@ -72,7 +72,7 @@ export default function MeetingInfoEditPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
-  const { groupId } = useLiff();
+  const { groupId, isReady } = useLiff();
   const lineGroupId = groupId ?? DEV_GROUP_ID;
 
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
@@ -94,6 +94,7 @@ export default function MeetingInfoEditPage({
 
   // Fetch meeting + members on mount
   useEffect(() => {
+    if (!isReady) return;
     Promise.all([
       getMeeting(id),
       getGroupMembers(lineGroupId),
@@ -124,7 +125,7 @@ export default function MeetingInfoEditPage({
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id, lineGroupId]);
+  }, [isReady, id, lineGroupId]);
 
   if (loading) {
     return (

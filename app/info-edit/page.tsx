@@ -98,7 +98,7 @@ function projectRoute(project: GroupProject): string {
 
 export default function InfoEditPage() {
   const router = useRouter();
-  const { groupId } = useLiff();
+  const { groupId, isReady } = useLiff();
   const lineGroupId = groupId ?? DEV_GROUP_ID;
   const [query, setQuery] = useState("");
   const [showPastProjects, setShowPastProjects] = useState(false);
@@ -108,13 +108,14 @@ export default function InfoEditPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isReady) return;
     Promise.all([
       getGroupProjects(lineGroupId).then((res) => setProjects(res.projects)),
       getGroupMeetings(lineGroupId).then((res) => setMeetings(res.meetings)),
     ])
       .catch((err) => console.error("Failed to load data:", err))
       .finally(() => setLoading(false));
-  }, [lineGroupId]);
+  }, [isReady, lineGroupId]);
 
   const now = new Date();
 

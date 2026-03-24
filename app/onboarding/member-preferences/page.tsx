@@ -11,13 +11,14 @@ import { apiFetch } from "@/utils/api";
 
 export default function MemberPreferencesPage() {
   const router = useRouter();
-  const { groupId } = useLiff();
+  const { groupId, isReady } = useLiff();
   const { projectId, memberIds } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isReady) return;
     const gid = groupId ?? "Cgroup_shared_001";
     getGroupMembers(gid).then(({ members: all }) => {
       const selected = memberIds.length > 0
@@ -26,7 +27,7 @@ export default function MemberPreferencesPage() {
       setMembers(selected);
       setDescriptions(Object.fromEntries(selected.map((m) => [m.user_id, ""])));
     });
-  }, [groupId, memberIds]);
+  }, [isReady, groupId, memberIds]);
 
   const handleChange = (id: string, value: string) => {
     setDescriptions((prev) => ({ ...prev, [id]: value }));

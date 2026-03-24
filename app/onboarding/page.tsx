@@ -32,7 +32,7 @@ function CheckIcon({ className }: { className?: string }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { profile, groupId } = useLiff();
+  const { profile, groupId, isReady } = useLiff();
   const { memberIds, projectId, projectDetail, setMemberIds, setProjectId } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(memberIds));
@@ -46,7 +46,7 @@ export default function OnboardingPage() {
     projectDetail.deliverables.trim() !== "";
 
   const handleBack = () => {
-    if (hasProjectDetails) {
+    if (projectId || hasProjectDetails) {
       setShowExitDialog(true);
     } else {
       router.push("/info-edit");
@@ -54,10 +54,11 @@ export default function OnboardingPage() {
   };
 
   useEffect(() => {
+    if (!isReady) return;
     getGroupMembers(groupId ?? "Cgroup_shared_001")
       .then(({ members }) => setMembers(members))
       .catch((err) => console.error("Failed to load members:", err));
-  }, [groupId]);
+  }, [isReady, groupId]);
 
   const allSelected =
     members.length > 0 && selectedIds.size === members.length;
