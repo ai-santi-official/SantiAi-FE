@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MeetingHeader } from "@/components/meeting/MeetingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
@@ -61,6 +61,10 @@ function GroupIcon({ className }: { className?: string }) {
 }
 
 export default function MeetingDetailsPage() {
+  return <Suspense><MeetingDetailsContent /></Suspense>;
+}
+
+function MeetingDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { groupId } = useLiff();

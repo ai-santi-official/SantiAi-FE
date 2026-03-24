@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
@@ -11,6 +11,10 @@ import { apiFetch } from "@/utils/api";
 import { getProject } from "@/utils/getProject";
 
 export default function ProjectDetailPage() {
+  return <Suspense><ProjectDetailContent /></Suspense>;
+}
+
+function ProjectDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { projectId: ctxProjectId, projectDetail, setProjectDetail, setProjectId, safeguardPassed, setSafeguardPassed } = useOnboarding();

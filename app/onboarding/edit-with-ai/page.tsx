@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon, SparklesIcon } from "@/components/icons";
 import { apiFetch } from "@/utils/api";
@@ -31,6 +31,10 @@ const QUICK_ACTIONS = [
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function EditWithAiPage() {
+  return <Suspense><EditWithAiContent /></Suspense>;
+}
+
+function EditWithAiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("project_id");

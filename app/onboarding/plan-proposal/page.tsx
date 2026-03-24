@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getPlanProposal,
@@ -220,6 +220,10 @@ function buildSnapshot(tasks: ColoredTask[], meetings: PlanMeeting[], aiReasonin
 }
 
 export default function PlanProposalPage() {
+  return <Suspense><PlanProposalContent /></Suspense>;
+}
+
+function PlanProposalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isViewMode = searchParams.get("mode") === "view";
