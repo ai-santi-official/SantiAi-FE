@@ -51,7 +51,11 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           liff.getProfile(),
           Promise.resolve(liff.getContext()),
         ]);
-        const groupId = context?.type === 'group' ? context.groupId : null;
+        // Prefer groupId from URL params (set by the bot webhook) over LIFF context,
+        // because LIFF context may return a different ID than the webhook groupId.
+        const urlGroupId = new URLSearchParams(window.location.search).get('groupId');
+        const liffGroupId = context?.type === 'group' ? context.groupId : null;
+        const groupId = urlGroupId ?? liffGroupId;
         const idToken = liff.getIDToken();
         setApiToken(idToken);
         setState({
