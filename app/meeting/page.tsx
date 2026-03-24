@@ -67,7 +67,7 @@ export default function MeetingSelectProjectPage() {
             <p className="text-center text-gray-400 py-8">Loading projects…</p>
           )}
           {!loading && projects.length === 0 && (
-            <p className="text-center text-gray-400 py-8">No projects found for this group.</p>
+            <p className="text-center text-gray-400 py-8">No approved projects yet. Approve a project first to create a meeting.</p>
           )}
           {projects.map((project) => {
             const selected = selectedId === project.project_id;
