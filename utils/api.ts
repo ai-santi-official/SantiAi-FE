@@ -1,31 +1,53 @@
-import liff from '@line/liff';
-
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const SESSION_TOKEN_KEY = 'santi_session_token';
 
 const defaultHeaders: Record<string, string> = {
   'Content-Type': 'application/json',
   'ngrok-skip-browser-warning': 'true',
 };
 
-let _idToken: string | null = null;
+let _token: string | null = null;
 
 export function setApiToken(token: string | null) {
-  _idToken = token;
+  _token = token;
+  if (token) {
+    sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  } else {
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  }
 }
 
-/** Get a fresh ID token, refreshing from LIFF if the current one is stale. */
-function getFreshToken(): string | null {
-  const fresh = liff.getIDToken();
-  if (fresh) {
-    _idToken = fresh;
+export function getApiToken(): string | null {
+  if (!_token) {
+    _token = sessionStorage.getItem(SESSION_TOKEN_KEY);
   }
-  return _idToken;
+  return _token;
+}
+
+export function clearApiToken() {
+  _token = null;
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
+/** Exchange LIFF ID token for a backend session JWT. */
+export async function loginWithIdToken(idToken: string): Promise<{ token: string; user: Record<string, unknown> }> {
+  const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: defaultHeaders,
+    body: JSON.stringify({ idToken }),
+  });
+  if (!res.ok) {
+    throw new Error(`Login failed: ${res.status}`);
+  }
+  const data = await res.json();
+  setApiToken(data.token);
+  return data;
 }
 
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...defaultHeaders, ...init?.headers as Record<string, string> };
 
-  const token = getFreshToken();
+  const token = getApiToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
