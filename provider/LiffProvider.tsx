@@ -117,8 +117,9 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         console.log('[LiffProvider] URL:', window.location.href);
         console.log('[LiffProvider] groupId resolved:', groupId, '| LIFF context type:', context?.type);
 
-        // If groupId looks like a LIFF context UUID (not a real LINE group ID), discard it
-        if (groupId && !groupId.startsWith('C')) {
+        // If groupId looks like a LIFF context UUID (contains dashes), discard it.
+        // Real LINE group IDs start with 'C' and have no dashes.
+        if (groupId && groupId.includes('-')) {
           console.log('[LiffProvider] Ignoring LIFF context UUID:', groupId);
           groupId = null;
           sessionStorage.removeItem(GROUP_ID_KEY);
