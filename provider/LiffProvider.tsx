@@ -28,6 +28,39 @@ const LiffContext = createContext<LiffState>({
   error: null,
 });
 
+/** Try multiple sources for the LINE group ID (webhook-provided, not LIFF context UUID). */
+function extractGroupId(context: ReturnType<typeof liff.getContext> | null): string | null {
+  // 1. Direct URL query param (?groupId=C685...)
+  const params = new URLSearchParams(window.location.search);
+  const direct = params.get('groupId');
+  if (direct) return direct;
+
+  // 2. Encoded inside liff.state (LIFF encodes original URL here after login redirect)
+  const liffState = params.get('liff.state');
+  if (liffState) {
+    try {
+      const decoded = decodeURIComponent(liffState);
+      const stateParams = new URLSearchParams(decoded.split('?')[1] ?? '');
+      const fromState = stateParams.get('groupId');
+      if (fromState) return fromState;
+    } catch { /* ignore parse errors */ }
+  }
+
+  // 3. Check hash fragment as fallback
+  if (window.location.hash) {
+    try {
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const fromHash = hashParams.get('groupId');
+      if (fromHash) return fromHash;
+    } catch { /* ignore */ }
+  }
+
+  // 4. LIFF context (may return a different ID than webhook — last resort)
+  if (context?.type === 'group') return context.groupId ?? null;
+
+  return null;
+}
+
 export function LiffProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LiffState>({
     isReady: false,
@@ -51,11 +84,11 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           liff.getProfile(),
           Promise.resolve(liff.getContext()),
         ]);
-        // Prefer groupId from URL params (set by the bot webhook) over LIFF context,
-        // because LIFF context may return a different ID than the webhook groupId.
-        const urlGroupId = new URLSearchParams(window.location.search).get('groupId');
-        const liffGroupId = context?.type === 'group' ? context.groupId : null;
-        const groupId = urlGroupId ?? liffGroupId;
+        // Extract groupId from multiple sources — LIFF may encode params in liff.state
+        // during login redirects, losing the original ?groupId= query param.
+        const groupId = extractGroupId(context);
+        console.log('[LiffProvider] URL:', window.location.href);
+        console.log('[LiffProvider] groupId resolved:', groupId, '| LIFF context type:', context?.type);
         const idToken = liff.getIDToken();
         setApiToken(idToken);
         setState({
