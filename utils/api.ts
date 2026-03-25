@@ -30,15 +30,8 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  return fetch(`${BASE_URL}${path}`, {
     ...init,
     headers,
   });
-
-  // If token expired, try re-login
-  if (res.status === 401 && liff.isLoggedIn()) {
-    liff.login({ redirectUri: window.location.href });
-  }
-
-  return res;
 }
