@@ -28,12 +28,17 @@ const LiffContext = createContext<LiffState>({
   error: null,
 });
 
+const GROUP_ID_KEY = 'santi_groupId';
+
 /** Try multiple sources for the LINE group ID (webhook-provided, not LIFF context UUID). */
 function extractGroupId(context: ReturnType<typeof liff.getContext> | null): string | null {
   // 1. Direct URL query param (?groupId=C685...)
   const params = new URLSearchParams(window.location.search);
   const direct = params.get('groupId');
-  if (direct) return direct;
+  if (direct) {
+    sessionStorage.setItem(GROUP_ID_KEY, direct);
+    return direct;
+  }
 
   // 2. Encoded inside liff.state (LIFF encodes original URL here after login redirect)
   const liffState = params.get('liff.state');
@@ -42,7 +47,10 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
       const decoded = decodeURIComponent(liffState);
       const stateParams = new URLSearchParams(decoded.split('?')[1] ?? '');
       const fromState = stateParams.get('groupId');
-      if (fromState) return fromState;
+      if (fromState) {
+        sessionStorage.setItem(GROUP_ID_KEY, fromState);
+        return fromState;
+      }
     } catch { /* ignore parse errors */ }
   }
 
@@ -51,14 +59,31 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
     try {
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const fromHash = hashParams.get('groupId');
-      if (fromHash) return fromHash;
+      if (fromHash) {
+        sessionStorage.setItem(GROUP_ID_KEY, fromHash);
+        return fromHash;
+      }
     } catch { /* ignore */ }
   }
 
   // 4. LIFF context (may return a different ID than webhook — last resort)
-  if (context?.type === 'group') return context.groupId ?? null;
+  if (context?.type === 'group') {
+    const gid = context.groupId ?? null;
+    if (gid) sessionStorage.setItem(GROUP_ID_KEY, gid);
+    return gid;
+  }
 
-  return null;
+  // 5. Recover from sessionStorage (survives login redirects)
+  return sessionStorage.getItem(GROUP_ID_KEY);
+}
+
+/** Save groupId to sessionStorage before login redirect so it survives the round-trip. */
+function persistGroupIdBeforeLogin(): void {
+  const params = new URLSearchParams(window.location.search);
+  const groupId = params.get('groupId');
+  if (groupId) {
+    sessionStorage.setItem(GROUP_ID_KEY, groupId);
+  }
 }
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
@@ -77,7 +102,8 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
       .then(async () => {
         const isLoggedIn = liff.isLoggedIn();
         if (!isLoggedIn) {
-          liff.login();
+          persistGroupIdBeforeLogin();
+          liff.login({ redirectUri: window.location.href });
           return;
         }
         const [{ userId, displayName, pictureUrl }, context] = await Promise.all([
