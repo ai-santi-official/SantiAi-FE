@@ -2,7 +2,7 @@
 
 import liff from "@line/liff";
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginWithIdToken, getApiToken } from "@/utils/api";
+import { loginWithAccessToken, getApiToken } from "@/utils/api";
 
 type LiffProfile = {
   userId: string;
@@ -117,18 +117,18 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         console.log('[LiffProvider] URL:', window.location.href);
         console.log('[LiffProvider] groupId resolved:', groupId, '| LIFF context type:', context?.type);
 
-        // Exchange LIFF ID token for a backend session JWT (only if we don't already have one)
-        const idToken = liff.getIDToken();
+        // Exchange LIFF access token for a backend session JWT (only if we don't already have one)
+        const accessToken = liff.getAccessToken();
         const existingToken = getApiToken();
-        if (!existingToken && idToken) {
-          await loginWithIdToken(idToken);
+        if (!existingToken && accessToken) {
+          await loginWithAccessToken(accessToken);
         }
 
         setState({
           isReady: true,
           isLoggedIn: true,
           profile: { userId, displayName, pictureUrl },
-          idToken: idToken ?? null,
+          idToken: accessToken ?? null,
           groupId: groupId ?? null,
           error: null,
         });

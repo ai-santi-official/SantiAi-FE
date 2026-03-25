@@ -29,12 +29,12 @@ export function clearApiToken() {
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
 }
 
-/** Exchange LIFF ID token for a backend session JWT. */
-export async function loginWithIdToken(idToken: string): Promise<{ token: string; user: Record<string, unknown> }> {
+/** Exchange LIFF access token for a backend session JWT. */
+export async function loginWithAccessToken(accessToken: string): Promise<{ token: string; user: Record<string, unknown> }> {
   const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: defaultHeaders,
-    body: JSON.stringify({ idToken }),
+    body: JSON.stringify({ accessToken }),
   });
   if (!res.ok) {
     throw new Error(`Login failed: ${res.status}`);
