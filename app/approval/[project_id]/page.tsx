@@ -62,7 +62,13 @@ type ApprovalSummary = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatShortDate(iso: string) {
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (iso.length > 10) {
+    const h = d.getHours().toString().padStart(2, "0");
+    const m = d.getMinutes().toString().padStart(2, "0");
+    if (h !== "00" || m !== "00") return `${datePart} · ${h}:${m}`;
+  }
+  return datePart;
 }
 
 function formatMeetingTime(iso: string) {
@@ -210,7 +216,7 @@ const MONTH_NAMES = [
 export default function ApprovalPage() {
   const params = useParams();
   const projectId = params.project_id as string;
-  const { profile } = useLiff();
+  const { profile, isReady } = useLiff();
 
   const [data, setData] = useState<PlanProposalResponse | null>(null);
   const [tasks, setTasks] = useState<ColoredTask[]>([]);
@@ -218,6 +224,7 @@ export default function ApprovalPage() {
   const [approvals, setApprovals] = useState<ApprovalMember[]>([]);
   const [approvalSummary, setApprovalSummary] = useState<ApprovalSummary | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [calDisplayYear, setCalDisplayYear] = useState(new Date().getFullYear());
   const [calDisplayMonth, setCalDisplayMonth] = useState(new Date().getMonth());
@@ -233,7 +240,7 @@ export default function ApprovalPage() {
   };
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId || !isReady) return;
 
     getPlanProposal(projectId).then((d) => {
       setData(d);
@@ -246,6 +253,9 @@ export default function ApprovalPage() {
         setCalDisplayYear(date.getFullYear());
         setCalDisplayMonth(date.getMonth());
       }
+    }).catch((err) => {
+      console.error("Failed to load plan:", err);
+      setLoadError("Failed to load plan. Please try again.");
     });
 
     // Fetch approval statuses
@@ -259,7 +269,7 @@ export default function ApprovalPage() {
         if (body.approval_summary) setApprovalSummary(body.approval_summary);
       })
       .catch((err) => console.error("Failed to load approvals:", err));
-  }, [projectId]);
+  }, [projectId, isReady]);
 
   const handleApprove = async () => {
     setSubmitting(true);
@@ -285,8 +295,16 @@ export default function ApprovalPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-dvh bg-santi-secondary">
-        <p className="text-sm text-black/60">Loading plan...</p>
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-santi-secondary gap-3">
+        <p className="text-sm text-black/60">{loadError ?? "Loading plan..."}</p>
+        {loadError && (
+          <button
+            onClick={() => { setLoadError(null); window.location.reload(); }}
+            className="px-4 py-2 bg-santi-primary rounded-xl text-sm font-bold"
+          >
+            Retry
+          </button>
+        )}
       </div>
     );
   }

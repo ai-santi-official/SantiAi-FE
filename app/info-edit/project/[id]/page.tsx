@@ -54,7 +54,13 @@ const TASK_COLORS = [
 // ─── Helpers ───────────────────────────────────────────────
 function formatShortDate(iso: string) {
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (iso.length > 10) {
+    const h = d.getHours().toString().padStart(2, "0");
+    const m = d.getMinutes().toString().padStart(2, "0");
+    if (h !== "00" || m !== "00") return `${datePart} · ${h}:${m}`;
+  }
+  return datePart;
 }
 
 function formatMeetingTime(iso: string) {

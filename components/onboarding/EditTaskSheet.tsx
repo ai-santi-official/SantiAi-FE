@@ -19,18 +19,12 @@ const STATUS_OPTIONS: { label: string; value: PlanTask["status"] }[] = [
   { label: "Done",   value: "done"  },
 ];
 
-// Convert "YYYY-MM-DD" to ISO string for DatePicker, or return ""
+// Convert date string to ISO string for DatePicker, or return ""
 function dateToIso(d: string): string {
   if (!d) return "";
   // If already ISO-ish, return as-is
   if (d.includes("T")) return d;
   return new Date(d + "T00:00:00").toISOString();
-}
-
-// Extract "YYYY-MM-DD" from ISO string
-function isoToDate(iso: string): string {
-  if (!iso) return "";
-  return iso.slice(0, 10);
 }
 
 const isCreate = (task: PlanTask) => !task.title && !task.start_date && !task.end_date;
@@ -114,7 +108,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
                 <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date & Time</label>
                 <DatePicker
                   value={dateToIso(startDate)}
-                  onChange={(iso) => setStartDate(isoToDate(iso))}
+                  onChange={(iso) => setStartDate(iso)}
                   placeholder="Select start"
                 />
               </div>
@@ -122,7 +116,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
                 <label className="text-xs font-semibold text-black/60 mb-1 block">End Date & Time</label>
                 <DatePicker
                   value={dateToIso(endDate)}
-                  onChange={(iso) => setEndDate(isoToDate(iso))}
+                  onChange={(iso) => setEndDate(iso)}
                   placeholder="Select end"
                 />
               </div>
