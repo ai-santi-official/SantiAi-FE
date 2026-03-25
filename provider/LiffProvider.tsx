@@ -113,15 +113,28 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         ]);
         // Extract groupId from multiple sources — LIFF may encode params in liff.state
         // during login redirects, losing the original ?groupId= query param.
-        const groupId = extractGroupId(context);
+        let groupId = extractGroupId(context);
         console.log('[LiffProvider] URL:', window.location.href);
         console.log('[LiffProvider] groupId resolved:', groupId, '| LIFF context type:', context?.type);
 
-        // Exchange LIFF access token for a backend session JWT (only if we don't already have one)
+        // If groupId looks like a LIFF context UUID (not a real LINE group ID), discard it
+        if (groupId && !groupId.startsWith('C')) {
+          console.log('[LiffProvider] Ignoring LIFF context UUID:', groupId);
+          groupId = null;
+          sessionStorage.removeItem(GROUP_ID_KEY);
+        }
+
+        // Exchange LIFF access token for a backend session JWT
         const accessToken = liff.getAccessToken();
         const existingToken = getApiToken();
         if (!existingToken && accessToken) {
-          await loginWithAccessToken(accessToken);
+          const loginResult = await loginWithAccessToken(accessToken);
+          // If groupId wasn't found from URL, use the user's group from backend
+          if (!groupId && loginResult.groups.length > 0) {
+            groupId = loginResult.groups[0];
+            sessionStorage.setItem(GROUP_ID_KEY, groupId);
+            console.log('[LiffProvider] groupId from backend:', groupId);
+          }
         }
 
         setState({

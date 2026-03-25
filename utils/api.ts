@@ -30,7 +30,7 @@ export function clearApiToken() {
 }
 
 /** Exchange LIFF access token for a backend session JWT. */
-export async function loginWithAccessToken(accessToken: string): Promise<{ token: string; user: Record<string, unknown> }> {
+export async function loginWithAccessToken(accessToken: string): Promise<{ token: string; user: Record<string, unknown>; groups: string[] }> {
   const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: defaultHeaders,
