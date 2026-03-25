@@ -1,3 +1,5 @@
+import liff from '@line/liff';
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 const defaultHeaders: Record<string, string> = {
@@ -11,15 +13,32 @@ export function setApiToken(token: string | null) {
   _idToken = token;
 }
 
+/** Get a fresh ID token, refreshing from LIFF if the current one is stale. */
+function getFreshToken(): string | null {
+  const fresh = liff.getIDToken();
+  if (fresh) {
+    _idToken = fresh;
+  }
+  return _idToken;
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...defaultHeaders, ...init?.headers as Record<string, string> };
 
-  if (_idToken) {
-    headers['Authorization'] = `Bearer ${_idToken}`;
+  const token = getFreshToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers,
   });
+
+  // If token expired, try re-login
+  if (res.status === 401 && liff.isLoggedIn()) {
+    liff.login({ redirectUri: window.location.href });
+  }
+
+  return res;
 }
