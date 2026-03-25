@@ -79,8 +79,8 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
 
 /** Save groupId to sessionStorage before login redirect so it survives the round-trip. */
 function persistGroupIdBeforeLogin(): void {
-  const params = new URLSearchParams(window.location.search);
-  const groupId = params.get('groupId');
+  // Use the same extraction logic (without LIFF context) to find groupId from any URL source
+  const groupId = extractGroupId(null);
   if (groupId) {
     sessionStorage.setItem(GROUP_ID_KEY, groupId);
   }
@@ -102,6 +102,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
       .then(async () => {
         const isLoggedIn = liff.isLoggedIn();
         if (!isLoggedIn) {
+          console.log('[LiffProvider] Not logged in. URL before login:', window.location.href);
           persistGroupIdBeforeLogin();
           liff.login({ redirectUri: window.location.href });
           return;
