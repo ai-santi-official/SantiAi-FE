@@ -2,7 +2,6 @@
 
 import liff from "@line/liff";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { loginWithAccessToken, getApiToken } from "@/utils/api";
 
 type LiffProfile = {
@@ -80,24 +79,6 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
 
 const INTENDED_PATH_KEY = 'santi_intended_path';
 
-/** Extract the intended route path from liff.state (set after login redirect). */
-function extractIntendedPath(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  const liffState = params.get('liff.state');
-  if (liffState) {
-    try {
-      const decoded = decodeURIComponent(liffState);
-      // liff.state contains the original path, e.g. "/approval/PROJECT_ID?groupId=..."
-      const pathPart = decoded.split('?')[0] || decoded;
-      if (pathPart && pathPart !== '/') {
-        return pathPart;
-      }
-    } catch { /* ignore */ }
-  }
-  // Check sessionStorage for path saved before login redirect
-  return sessionStorage.getItem(INTENDED_PATH_KEY);
-}
-
 /** Save the current path before login redirect so it survives the round-trip. */
 function persistIntendedPathBeforeLogin(): void {
   const path = window.location.pathname;
@@ -116,7 +97,6 @@ function persistGroupIdBeforeLogin(): void {
 }
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [state, setState] = useState<LiffState>({
     isReady: false,
     isLoggedIn: false,
@@ -185,18 +165,6 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           groupId: groupId ?? null,
           error: null,
         });
-
-        // Restore intended route after login redirect (e.g. /approval/PROJECT_ID)
-        const intendedPath = extractIntendedPath();
-        if (intendedPath) {
-          sessionStorage.removeItem(INTENDED_PATH_KEY);
-          const targetPath = intendedPath.split('?')[0];
-          // Only navigate if we're not already on the intended page
-          if (targetPath !== window.location.pathname) {
-            console.log('[LiffProvider] Restoring intended path:', intendedPath);
-            router.replace(intendedPath);
-          }
-        }
       })
       .catch((error: Error) => {
         setState({ isReady: true, isLoggedIn: false, profile: null, idToken: null, groupId: null, error });
