@@ -10,8 +10,8 @@ export type PlanTask = {
   id: string;
   title: string;
   description: string;
-  start_date: string; // "YYYY-MM-DD"
-  end_date: string;   // "YYYY-MM-DD"
+  start_date: string; // "YYYY-MM-DD" or ISO datetime
+  end_date: string;   // "YYYY-MM-DD" or ISO datetime
   assigned_to: string[];
   status: "todo" | "doing" | "done";
 };
@@ -79,8 +79,8 @@ export async function getPlanProposal(projectId: string): Promise<PlanProposalRe
     id: t.id ?? t.task_id ?? `task-${i}`,
     title: t.title ?? t.task_title ?? '',
     description: t.description ?? t.task_description ?? '',
-    start_date: t.start_date ?? (t.start_time ? t.start_time.slice(0, 10) : ''),
-    end_date: t.end_date ?? t.due_date ?? (t.end_time ? t.end_time.slice(0, 10) : ''),
+    start_date: t.start_date ?? t.start_time ?? '',
+    end_date: t.end_date ?? t.due_date ?? t.end_time ?? '',
     assigned_to: resolveIds(t.assigned_to ?? t.assignee_user_ids ?? t.task_assignees ?? []),
     status: t.status ?? 'todo',
   }));

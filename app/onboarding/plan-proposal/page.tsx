@@ -70,10 +70,14 @@ type TimelineGroup = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+/** Extract "YYYY-MM-DD" from a date string (ISO or date-only). */
+function toDateOnly(iso: string): string {
+  return iso.slice(0, 10);
+}
+
 function formatShortDate(iso: string) {
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
   const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  // Show time only if the original value includes time info (not just a date)
   if (iso.length > 10) {
     const h = d.getHours().toString().padStart(2, "0");
     const m = d.getMinutes().toString().padStart(2, "0");
@@ -94,7 +98,7 @@ function buildTimelineGroups(tasks: ColoredTask[], meetings: PlanMeeting[]): Tim
   const map = new Map<string, TimelineGroup>();
 
   tasks.forEach((task) => {
-    const key = `${task.start_date}~${task.end_date}`;
+    const key = `${toDateOnly(task.start_date)}~${toDateOnly(task.end_date)}`;
     if (!map.has(key)) {
       map.set(key, {
         dateKey: key,
@@ -151,7 +155,7 @@ function buildCalendarCells(
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const colors: string[] = [];
     tasks.forEach((t) => {
-      if (dateStr >= t.start_date && dateStr <= t.end_date && !colors.includes(t.color)) {
+      if (dateStr >= toDateOnly(t.start_date) && dateStr <= toDateOnly(t.end_date) && !colors.includes(t.color)) {
         colors.push(t.color);
       }
     });
@@ -392,8 +396,8 @@ function PlanProposalContent() {
         id: t.id ?? t.task_id ?? `task-${i}`,
         title: t.title ?? t.task_title ?? "",
         description: t.description ?? t.task_description ?? "",
-        start_date: t.start_date ?? (t.start_time ? t.start_time.slice(0, 10) : ""),
-        end_date: t.end_date ?? t.due_date ?? (t.end_time ? t.end_time.slice(0, 10) : ""),
+        start_date: t.start_date ?? t.start_time ?? "",
+        end_date: t.end_date ?? t.due_date ?? t.end_time ?? "",
         assigned_to: resolveIds(t.assigned_to ?? t.assignee_user_ids ?? t.task_assignees ?? []),
         status: t.status ?? "todo",
       })),

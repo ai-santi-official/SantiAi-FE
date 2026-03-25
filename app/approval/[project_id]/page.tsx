@@ -60,6 +60,10 @@ type ApprovalSummary = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function toDateOnly(iso: string): string {
+  return iso.slice(0, 10);
+}
+
 function formatShortDate(iso: string) {
   const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
   const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -83,7 +87,7 @@ function buildTimelineGroups(tasks: ColoredTask[], meetings: PlanMeeting[]): Tim
   const map = new Map<string, TimelineGroup>();
 
   tasks.forEach((task) => {
-    const key = `${task.start_date}~${task.end_date}`;
+    const key = `${toDateOnly(task.start_date)}~${toDateOnly(task.end_date)}`;
     if (!map.has(key)) {
       map.set(key, {
         dateKey: key,
@@ -140,7 +144,7 @@ function buildCalendarCells(
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     const colors: string[] = [];
     tasks.forEach((t) => {
-      if (dateStr >= t.start_date && dateStr <= t.end_date && !colors.includes(t.color)) {
+      if (dateStr >= toDateOnly(t.start_date) && dateStr <= toDateOnly(t.end_date) && !colors.includes(t.color)) {
         colors.push(t.color);
       }
     });
