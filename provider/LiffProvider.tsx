@@ -136,6 +136,14 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             sessionStorage.setItem(GROUP_ID_KEY, groupId);
             console.log('[LiffProvider] groupId from backend:', groupId);
           }
+        } else if (!groupId && existingToken && accessToken) {
+          // Already logged in but no valid groupId — fetch groups from backend
+          const loginResult = await loginWithAccessToken(accessToken);
+          if (loginResult.groups.length > 0) {
+            groupId = loginResult.groups[0];
+            sessionStorage.setItem(GROUP_ID_KEY, groupId);
+            console.log('[LiffProvider] groupId from backend (re-login):', groupId);
+          }
         }
 
         setState({
