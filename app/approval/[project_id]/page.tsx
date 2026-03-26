@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   getPlanProposal,
   type PlanProposalResponse,
@@ -219,6 +219,7 @@ const MONTH_NAMES = [
 
 export default function ApprovalPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.project_id as string;
   const { profile, isReady } = useLiff();
 
@@ -358,6 +359,7 @@ export default function ApprovalPage() {
   const totalMembers = approvalSummary?.total_members ?? approvals.length;
   const currentUserApproval = approvals.find((a) => a.line_user_id === profile?.userId);
   const hasApproved = currentUserApproval?.approval_status === "approved";
+  const allApproved = approvedCount === totalMembers && totalMembers > 0;
 
   return (
     <>
@@ -584,18 +586,27 @@ export default function ApprovalPage() {
           ))}
         </div>
 
-        {/* Approve Button */}
-        <button
-          onClick={handleApprove}
-          disabled={hasApproved || submitting}
-          className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-            hasApproved
-              ? "bg-green-100 text-green-700 cursor-default"
-              : "bg-santi-primary text-black active:brightness-95 disabled:opacity-50"
-          }`}
-        >
-          {hasApproved ? "You have approved" : submitting ? "Approving..." : "Approve"}
-        </button>
+        {/* Approve / View Project Button */}
+        {allApproved ? (
+          <button
+            onClick={() => router.push(`/info-edit/project/${projectId}`)}
+            className="w-full py-4 rounded-2xl font-bold text-lg transition-all bg-green-100 text-green-700 active:brightness-95"
+          >
+            View Active Project
+          </button>
+        ) : (
+          <button
+            onClick={handleApprove}
+            disabled={hasApproved || submitting}
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
+              hasApproved
+                ? "bg-green-100 text-green-700 cursor-default"
+                : "bg-santi-primary text-black active:brightness-95 disabled:opacity-50"
+            }`}
+          >
+            {hasApproved ? "You have approved" : submitting ? "Approving..." : "Approve"}
+          </button>
+        )}
       </div>
     </>
   );

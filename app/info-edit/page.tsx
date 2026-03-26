@@ -93,6 +93,9 @@ function projectRoute(project: GroupProject): string {
   if (project.project_status === "approved" || project.project_status === "done") {
     return `/info-edit/project/${project.project_id}`;
   }
+  if (project.project_status === "waiting_approval") {
+    return `/approval/${project.project_id}`;
+  }
   return `/onboarding/plan-proposal?project_id=${project.project_id}&mode=view`;
 }
 
