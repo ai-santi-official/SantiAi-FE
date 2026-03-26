@@ -2,7 +2,7 @@
 
 import liff from "@line/liff";
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginWithAccessToken, getApiToken } from "@/utils/api";
+import { loginWithAccessToken, getApiToken, resolveLaunchContext } from "@/utils/api";
 
 type LiffProfile = {
   userId: string;
@@ -29,14 +29,16 @@ const LiffContext = createContext<LiffState>({
 });
 
 const GROUP_ID_KEY = 'santi_groupId';
+const CTX_TOKEN_KEY = 'santi_ctx';
 
-/** Try multiple sources for the LINE group ID (webhook-provided, not LIFF context UUID). */
-function extractGroupId(context: ReturnType<typeof liff.getContext> | null): string | null {
-  // 1. Direct URL query param (?groupId=C685...)
+/** Extract the ctx token from URL (query params or liff.state). */
+function extractCtxToken(): string | null {
   const params = new URLSearchParams(window.location.search);
-  const direct = params.get('groupId');
+
+  // 1. Direct URL query param (?ctx=...)
+  const direct = params.get('ctx');
   if (direct) {
-    sessionStorage.setItem(GROUP_ID_KEY, direct);
+    sessionStorage.setItem(CTX_TOKEN_KEY, direct);
     return direct;
   }
 
@@ -46,9 +48,9 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
     try {
       const decoded = decodeURIComponent(liffState);
       const stateParams = new URLSearchParams(decoded.split('?')[1] ?? '');
-      const fromState = stateParams.get('groupId');
+      const fromState = stateParams.get('ctx');
       if (fromState) {
-        sessionStorage.setItem(GROUP_ID_KEY, fromState);
+        sessionStorage.setItem(CTX_TOKEN_KEY, fromState);
         return fromState;
       }
     } catch { /* ignore parse errors */ }
@@ -58,22 +60,25 @@ function extractGroupId(context: ReturnType<typeof liff.getContext> | null): str
   if (window.location.hash) {
     try {
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const fromHash = hashParams.get('groupId');
+      const fromHash = hashParams.get('ctx');
       if (fromHash) {
-        sessionStorage.setItem(GROUP_ID_KEY, fromHash);
+        sessionStorage.setItem(CTX_TOKEN_KEY, fromHash);
         return fromHash;
       }
     } catch { /* ignore */ }
   }
 
-  // 4. LIFF context (may return a different ID than webhook — last resort)
+  // 4. Recover from sessionStorage (survives login redirects)
+  return sessionStorage.getItem(CTX_TOKEN_KEY);
+}
+
+/** Fallback: try to get groupId from LIFF context or sessionStorage. */
+function extractGroupIdFallback(context: ReturnType<typeof liff.getContext> | null): string | null {
   if (context?.type === 'group') {
     const gid = context.groupId ?? null;
     if (gid) sessionStorage.setItem(GROUP_ID_KEY, gid);
     return gid;
   }
-
-  // 5. Recover from sessionStorage (survives login redirects)
   return sessionStorage.getItem(GROUP_ID_KEY);
 }
 
@@ -87,13 +92,9 @@ function persistIntendedPathBeforeLogin(): void {
   }
 }
 
-/** Save groupId to sessionStorage before login redirect so it survives the round-trip. */
-function persistGroupIdBeforeLogin(): void {
-  // Use the same extraction logic (without LIFF context) to find groupId from any URL source
-  const groupId = extractGroupId(null);
-  if (groupId) {
-    sessionStorage.setItem(GROUP_ID_KEY, groupId);
-  }
+/** Save ctx token to sessionStorage before login redirect so it survives the round-trip. */
+function persistCtxBeforeLogin(): void {
+  extractCtxToken(); // side-effect: saves to sessionStorage if found
 }
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
@@ -113,7 +114,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         const isLoggedIn = liff.isLoggedIn();
         if (!isLoggedIn) {
           console.log('[LiffProvider] Not logged in. URL before login:', window.location.href);
-          persistGroupIdBeforeLogin();
+          persistCtxBeforeLogin();
           persistIntendedPathBeforeLogin();
           liff.login({ redirectUri: window.location.href });
           return;
@@ -122,38 +123,56 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           liff.getProfile(),
           Promise.resolve(liff.getContext()),
         ]);
-        // Extract groupId from multiple sources — LIFF may encode params in liff.state
-        // during login redirects, losing the original ?groupId= query param.
-        let groupId = extractGroupId(context);
-        console.log('[LiffProvider] URL:', window.location.href);
-        console.log('[LiffProvider] groupId resolved:', groupId, '| LIFF context type:', context?.type);
 
-        // If groupId looks like a LIFF context UUID (contains dashes), discard it.
-        // Real LINE group IDs start with 'C' and have no dashes.
-        if (groupId && groupId.includes('-')) {
-          console.log('[LiffProvider] Ignoring LIFF context UUID:', groupId);
-          groupId = null;
-          sessionStorage.removeItem(GROUP_ID_KEY);
+        console.log('[LiffProvider] URL:', window.location.href);
+
+        // 1. Try to resolve groupId from launch-context JWT token
+        let groupId: string | null = null;
+        const ctxToken = extractCtxToken();
+        if (ctxToken) {
+          const resolved = await resolveLaunchContext(ctxToken);
+          if (resolved) {
+            groupId = resolved.groupId;
+            sessionStorage.setItem(GROUP_ID_KEY, groupId);
+            sessionStorage.removeItem(CTX_TOKEN_KEY);
+            console.log('[LiffProvider] groupId from launch context:', groupId, '| action:', resolved.action);
+          } else {
+            console.log('[LiffProvider] Launch context expired or invalid');
+            sessionStorage.removeItem(CTX_TOKEN_KEY);
+          }
         }
 
-        // Exchange LIFF access token for a backend session JWT
+        // 2. Fallback: LIFF context or sessionStorage
+        if (!groupId) {
+          groupId = extractGroupIdFallback(context);
+          // Discard LIFF context UUIDs (contain dashes) — real LINE group IDs start with 'C'
+          if (groupId && groupId.includes('-')) {
+            console.log('[LiffProvider] Ignoring LIFF context UUID:', groupId);
+            groupId = null;
+            sessionStorage.removeItem(GROUP_ID_KEY);
+          }
+          if (groupId) {
+            console.log('[LiffProvider] groupId from fallback:', groupId);
+          }
+        }
+
+        // 3. Exchange LIFF access token for a backend session JWT
         const accessToken = liff.getAccessToken();
         const existingToken = getApiToken();
         if (!existingToken && accessToken) {
           const loginResult = await loginWithAccessToken(accessToken);
-          // If groupId wasn't found from URL, use the user's group from backend
+          // 4. Last resort: use membership data when context is missing
           if (!groupId && loginResult.groups.length > 0) {
             groupId = loginResult.groups[0];
             sessionStorage.setItem(GROUP_ID_KEY, groupId);
-            console.log('[LiffProvider] groupId from backend:', groupId);
+            console.log('[LiffProvider] groupId from membership (fallback):', groupId);
           }
         } else if (!groupId && existingToken && accessToken) {
-          // Already logged in but no valid groupId — fetch groups from backend
           const loginResult = await loginWithAccessToken(accessToken);
           if (loginResult.groups.length > 0) {
             groupId = loginResult.groups[0];
             sessionStorage.setItem(GROUP_ID_KEY, groupId);
-            console.log('[LiffProvider] groupId from backend (re-login):', groupId);
+            console.log('[LiffProvider] groupId from membership (re-login fallback):', groupId);
           }
         }
 

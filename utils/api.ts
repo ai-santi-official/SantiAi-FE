@@ -44,6 +44,15 @@ export async function loginWithAccessToken(accessToken: string): Promise<{ token
   return data;
 }
 
+/** Resolve a launch-context token into groupId + action. Returns null if expired/invalid. */
+export async function resolveLaunchContext(ctx: string): Promise<{ groupId: string; action: string; sourceUserId: string | null } | null> {
+  const res = await fetch(`${BASE_URL}/api/v1/launch-context/${encodeURIComponent(ctx)}`, {
+    headers: defaultHeaders,
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...defaultHeaders, ...init?.headers as Record<string, string> };
 
