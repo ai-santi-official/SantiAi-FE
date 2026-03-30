@@ -83,13 +83,14 @@ const STATUS_CYCLE: ("todo" | "doing" | "done")[] = ["todo", "doing", "done"];
 type ColoredTask = PlanTask & { color: string; _taskId: string };
 
 function beTaskToPlan(t: ProjectTask, idx: number): ColoredTask {
+  const dateOnly = t.due_date ? t.due_date.slice(0, 10) : "";
   return {
     id: t.task_id,
     _taskId: t.task_id,
     title: t.task_title,
     description: t.task_description,
-    start_date: t.due_date ?? "",
-    end_date: t.due_date ?? "",
+    start_date: dateOnly,
+    end_date: dateOnly,
     assigned_to: t.assignees.map((a) => a.user_id),
     status: t.task_status,
     color: TASK_COLORS[idx % TASK_COLORS.length],
@@ -599,15 +600,30 @@ function ProjectInfoEditContent({
           <button onClick={handleBackClick} aria-label="Go back" className="p-1 text-black">
             <BackArrowIcon />
           </button>
-          <h1 className="text-lg font-bold text-black">Edit Project</h1>
-          <button
-            onClick={() => setShowVersionHistory(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/60 text-black text-xs font-semibold active:bg-white/80 transition-colors"
-            aria-label="Version history"
-          >
-            <HistoryIcon />
-            History
-          </button>
+          <h1 className="text-lg font-bold text-black">Project</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowVersionHistory(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/60 text-black text-xs font-semibold active:bg-white/80 transition-colors"
+              aria-label="Version history"
+            >
+              <HistoryIcon />
+              History
+            </button>
+            <button
+              onClick={() => {
+                try { (window as any).liff?.closeWindow(); } catch { /* ignore */ }
+                router.back();
+              }}
+              aria-label="Close"
+              className="p-1.5 rounded-full bg-white/60 text-black active:bg-white/80 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
 
