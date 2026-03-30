@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, use, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useLiff } from "@/provider/LiffProvider";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon, CalendarDotIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon, MeetingIcon, TrashIcon, PlusIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -265,8 +266,18 @@ export default function ProjectInfoEditPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  return <Suspense><ProjectInfoEditContent params={params} /></Suspense>;
+}
+
+function ProjectInfoEditContent({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { id } = use(params);
+  const { isReady } = useLiff();
 
   // ── Data state ──
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -292,6 +303,7 @@ export default function ProjectInfoEditPage({
   const [deleteTarget, setDeleteTarget] = useState<{ type: "task" | "meeting"; id: string } | null>(null);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [markDoneTaskId, setMarkDoneTaskId] = useState<string | null>(null);
   const [currentVersionNumber, setCurrentVersionNumber] = useState(0);
   const [calDisplayYear, setCalDisplayYear] = useState(new Date().getFullYear());
   const [calDisplayMonth, setCalDisplayMonth] = useState(new Date().getMonth());
@@ -339,7 +351,18 @@ export default function ProjectInfoEditPage({
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isReady) loadData(); }, [id, isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle markDone query param from LINE reminder button
+  const markDoneHandled = useRef(false);
+  useEffect(() => {
+    if (markDoneHandled.current) return;
+    const taskId = searchParams.get("markDone");
+    if (taskId && tasks.length > 0) {
+      markDoneHandled.current = true;
+      setMarkDoneTaskId(taskId);
+    }
+  }, [searchParams, tasks]);
 
   const toggleExpanded = (itemId: string) => {
     setExpandedIds((prev) => {
@@ -353,13 +376,23 @@ export default function ProjectInfoEditPage({
   const bumpVersion = () => setCurrentVersionNumber((v) => v + 1);
 
   // ── Task status cycle ──
-  const cycleTaskStatus = async (taskId: string) => {
+  const cycleTaskStatus = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
     const nextStatus = STATUS_CYCLE[(STATUS_CYCLE.indexOf(task.status) + 1) % STATUS_CYCLE.length];
-    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: nextStatus } : t));
+    if (nextStatus === "done") {
+      setMarkDoneTaskId(taskId);
+      return;
+    }
+    applyTaskStatus(taskId, nextStatus);
+  };
+
+  const applyTaskStatus = async (taskId: string, status: "todo" | "doing" | "done") => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status } : t));
     try {
-      await updateTaskStatus(taskId, nextStatus);
+      await updateTaskStatus(taskId, status);
       bumpVersion();
     } catch (err) {
       console.error("Failed to update task status:", err);
@@ -980,6 +1013,21 @@ export default function ProjectInfoEditPage({
           onPreview={() => {}}
           onRevert={handleVersionRevert}
           onClose={() => setShowVersionHistory(false)}
+        />
+      )}
+
+      {/* Mark as Done Confirmation */}
+      {markDoneTaskId && (
+        <ConfirmDialog
+          title="Mark as done?"
+          message={`Are you sure you want to mark "${tasks.find((t) => t.id === markDoneTaskId)?.title ?? "this task"}" as done?`}
+          confirmLabel="Done"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            applyTaskStatus(markDoneTaskId, "done");
+            setMarkDoneTaskId(null);
+          }}
+          onCancel={() => setMarkDoneTaskId(null)}
         />
       )}
     </div>
