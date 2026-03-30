@@ -2,6 +2,7 @@ import { apiFetch } from './api';
 
 export type PlanMember = {
   user_id: string;
+  line_user_id?: string;
   display_name: string | null;
   picture_url: string | null;
 };

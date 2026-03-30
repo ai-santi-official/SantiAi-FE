@@ -8,10 +8,9 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
 import { CalendarIcon, ChevronRightIcon } from "@/components/icons";
 import { useLiff } from "@/provider/LiffProvider";
-import { getGroupMembers } from "@/utils/getGroupMembers";
+import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
+import { getProject } from "@/utils/getProject";
 import { apiFetch } from "@/utils/api";
-
-const DEV_GROUP_ID = "Cgroup_shared_001";
 
 type Member = { line_user_id: string; display_name: string; picture_url: string | null };
 
@@ -67,10 +66,9 @@ export default function MeetingDetailsPage() {
 function MeetingDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { groupId, isReady } = useLiff();
+  const { isReady } = useLiff();
   const projectId = searchParams.get("projectId") ?? "";
   const projectName = searchParams.get("projectName") ?? "";
-  const lineGroupId = groupId ?? DEV_GROUP_ID;
 
   const [meetingName, setMeetingName] = useState("");
   const [date, setDate] = useState("");
@@ -81,21 +79,29 @@ function MeetingDetailsContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [projectDueDate, setProjectDueDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isReady) return;
-    getGroupMembers(lineGroupId)
+    if (!isReady || !projectId) return;
+
+    getProjectMembers(projectId)
       .then((res) =>
         setMembers(
-          res.members.map((m) => ({
-            line_user_id: m.line_user_id,
+          res.map((m) => ({
+            line_user_id: (m as any).line_user_id ?? "",
             display_name: m.display_name ?? "Unknown",
             picture_url: m.picture_url,
           }))
         )
       )
       .catch((err) => console.error("Failed to load members:", err));
-  }, [isReady, lineGroupId]);
+
+    getProject(projectId)
+      .then((project) => {
+        if (project.final_due_date) setProjectDueDate(project.final_due_date);
+      })
+      .catch((err) => console.error("Failed to load project:", err));
+  }, [isReady, projectId]);
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
   const toggleSelectAll = () => {
@@ -147,6 +153,7 @@ function MeetingDetailsContent() {
                 onChange={setDate}
                 placeholder="Select date"
                 dateOnly
+                maxDate={projectDueDate ?? undefined}
               />
             </div>
 
@@ -255,6 +262,16 @@ function MeetingDetailsContent() {
         />
       )}
 
+      {/* Loading Modal */}
+      {submitting && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+          <div className="bg-white rounded-[2rem] p-8 shadow-2xl flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-santi-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-black font-semibold text-lg">Creating meeting...</p>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/30 backdrop-blur-[2px]">
@@ -321,6 +338,7 @@ function MeetingDetailsContent() {
                 disabled={submitting}
                 onClick={async () => {
                   setSubmitting(true);
+                  setShowConfirm(false);
                   try {
                     const res = await apiFetch(`/api/v1/meetings/${projectId}`, {
                       method: "POST",
@@ -334,11 +352,9 @@ function MeetingDetailsContent() {
                       }),
                     });
                     if (!res.ok) throw new Error(`API error: ${res.status}`);
-                    setShowConfirm(false);
                     router.push("/info-edit");
                   } catch (err) {
                     console.error("Failed to create meeting:", err);
-                  } finally {
                     setSubmitting(false);
                   }
                 }}

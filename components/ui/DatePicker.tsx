@@ -19,11 +19,13 @@ function daysInMonth(year: number, month: number) {
 function firstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
-function formatDisplay(iso: string) {
+function formatDisplay(iso: string, dateOnly?: boolean) {
   const d = new Date(iso);
-  return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
+  const datePart = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
     .toString()
-    .padStart(2, "0")}/${d.getFullYear()}  ${d
+    .padStart(2, "0")}/${d.getFullYear()}`;
+  if (dateOnly) return datePart;
+  return `${datePart}  ${d
     .getHours()
     .toString()
     .padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
@@ -113,9 +115,11 @@ type Props = {
   onChange: (value: string) => void;
   placeholder?: string;
   dateOnly?: boolean;
+  minDate?: string; // ISO string — earliest selectable date
+  maxDate?: string; // ISO string — latest selectable date
 };
 
-export function DatePicker({ value, onChange, placeholder = "Select date & time", dateOnly = false }: Props) {
+export function DatePicker({ value, onChange, placeholder = "Select date & time", dateOnly = false, minDate, maxDate }: Props) {
   const now = new Date();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -161,14 +165,21 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
   };
 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const isCurrentMonth = displayYear === now.getFullYear() && displayMonth === now.getMonth();
+  const minD = minDate ? new Date(new Date(minDate).getFullYear(), new Date(minDate).getMonth(), new Date(minDate).getDate()) : null;
+  const maxD = maxDate ? new Date(new Date(maxDate).getFullYear(), new Date(maxDate).getMonth(), new Date(maxDate).getDate()) : null;
+  const earliestDate = minD && minD > today ? minD : today;
+  const isCurrentMonth = displayYear === earliestDate.getFullYear() && displayMonth === earliestDate.getMonth();
 
   const isSelected = (d: number) =>
     selectedDay?.y === displayYear && selectedDay?.m === displayMonth && selectedDay?.d === d;
   const isToday = (d: number) =>
     now.getFullYear() === displayYear && now.getMonth() === displayMonth && now.getDate() === d;
-  const isPast = (d: number) =>
-    new Date(displayYear, displayMonth, d) < today;
+  const isOutOfRange = (d: number) => {
+    const cellDate = new Date(displayYear, displayMonth, d);
+    if (cellDate < earliestDate) return true;
+    if (maxD && cellDate > maxD) return true;
+    return false;
+  };
 
   const open = () => {
     const ref = value ? new Date(value) : now;
@@ -195,7 +206,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
         className="w-full h-14 px-4 bg-white border border-santi-muted rounded-xl flex items-center justify-between text-base transition-colors focus:outline-none focus:border-santi-primary focus:ring-2 focus:ring-santi-primary/25"
       >
         <span className={value ? "text-black" : "text-santi-muted"}>
-          {value ? formatDisplay(value) : placeholder}
+          {value ? formatDisplay(value, dateOnly) : placeholder}
         </span>
         <span className="text-santi-primary"><CalendarIcon className="w-5 h-5" /></span>
       </button>
@@ -242,8 +253,8 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
                 {cells.map((cell, i) => {
                   const sel = cell.current && isSelected(cell.day);
                   const tod = cell.current && isToday(cell.day);
-                  const past = cell.current && isPast(cell.day);
-                  const disabled = !cell.current || past;
+                  const outOfRange = cell.current && isOutOfRange(cell.day);
+                  const disabled = !cell.current || outOfRange;
                   return (
                     <button
                       key={i}
