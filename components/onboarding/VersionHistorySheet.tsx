@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/utils/api";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+
+const INITIAL_VISIBLE = 5;
 
 type VersionCreator = {
   user_id: string;
@@ -51,6 +53,12 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
   const [loading, setLoading] = useState(true);
   const [revertTarget, setRevertTarget] = useState<PlanVersionSummary | null>(null);
   const [reverting, setReverting] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  // Sort by version_number descending (latest first) and limit display
+  const sortedVersions = useMemo(() => [...versions].sort((a, b) => b.version_number - a.version_number), [versions]);
+  const visibleVersions = showAll ? sortedVersions : sortedVersions.slice(0, INITIAL_VISIBLE);
+  const hasMore = sortedVersions.length > INITIAL_VISIBLE;
 
   useEffect(() => {
     apiFetch(`/api/v1/projects/${projectId}/plan-versions`)
@@ -92,7 +100,7 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
             <p className="text-sm text-black/60 text-center py-8">No versions found</p>
           ) : (
             <div className="space-y-2">
-              {versions.map((v) => {
+              {visibleVersions.map((v) => {
                 const isCurrent = v.version_number === currentVersionNumber;
                 const taskCount = v.snapshot?.tasks?.length ?? 0;
                 const meetingCount = v.snapshot?.meetings?.length ?? 0;
@@ -161,6 +169,15 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
                   </div>
                 );
               })}
+
+              {hasMore && !showAll && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  className="w-full py-2 text-sm font-semibold text-santi-primary active:text-santi-primary/70 transition-colors"
+                >
+                  Show {sortedVersions.length - INITIAL_VISIBLE} older version{sortedVersions.length - INITIAL_VISIBLE !== 1 ? "s" : ""}
+                </button>
+              )}
             </div>
           )}
 
