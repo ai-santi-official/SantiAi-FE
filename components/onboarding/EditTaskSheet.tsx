@@ -105,19 +105,21 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
 
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date & Time</label>
+                <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date</label>
                 <DatePicker
                   value={dateToIso(startDate)}
                   onChange={(iso) => setStartDate(iso)}
                   placeholder="Select start"
+                  dateOnly
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">End Date & Time</label>
+                <label className="text-xs font-semibold text-black/60 mb-1 block">End Date</label>
                 <DatePicker
                   value={dateToIso(endDate)}
                   onChange={(iso) => setEndDate(iso)}
                   placeholder="Select end"
+                  dateOnly
                 />
               </div>
             </div>
