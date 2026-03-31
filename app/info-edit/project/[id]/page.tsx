@@ -31,7 +31,7 @@ const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; className: s
 };
 
 const TASK_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  todo:  { label: "To Do",  className: "bg-slate-100 text-slate-500" },
+  todo:  { label: "To Do",  className: "bg-blue-100 text-blue-600" },
   doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
   done:  { label: "Done",   className: "bg-green-100 text-green-700" },
 };
@@ -82,8 +82,6 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const STATUS_CYCLE: ("todo" | "doing" | "done")[] = ["todo", "doing", "done"];
 
 // ─── Convert BE types → PlanTask/PlanMeeting for EditSheets ──
 type ColoredTask = PlanTask & { color: string; _taskId: string };
@@ -308,6 +306,7 @@ function ProjectInfoEditContent({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editingItem, setEditingItem] = useState<{ type: "task" | "meeting"; id: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "task" | "meeting"; id: string } | null>(null);
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [markDoneTaskId, setMarkDoneTaskId] = useState<string | null>(null);
@@ -382,18 +381,7 @@ function ProjectInfoEditContent({
   // BE creates a snapshot after each mutation; bump local version to stay in sync
   const bumpVersion = () => setCurrentVersionNumber((v) => v + 1);
 
-  // ── Task status cycle ──
-  const cycleTaskStatus = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    const nextStatus = STATUS_CYCLE[(STATUS_CYCLE.indexOf(task.status) + 1) % STATUS_CYCLE.length];
-    if (nextStatus === "done") {
-      setMarkDoneTaskId(taskId);
-      return;
-    }
-    applyTaskStatus(taskId, nextStatus);
-  };
-
+  // ── Task status change ──
   const applyTaskStatus = async (taskId: string, status: "todo" | "doing" | "done") => {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
@@ -803,12 +791,36 @@ function ProjectInfoEditContent({
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); cycleTaskStatus(task.id); }}
-                              className="rounded-full active:scale-95 transition-transform"
-                            >
-                              <TaskStatusBadge status={task.status} />
-                            </button>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id); }}
+                                className="rounded-full active:scale-95 transition-transform"
+                              >
+                                <TaskStatusBadge status={task.status} />
+                              </button>
+                              {statusDropdownId === task.id && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setStatusDropdownId(null); }} />
+                                  <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg border border-slate-100 py-1 min-w-[120px]">
+                                    {(["todo", "doing", "done"] as const).map((s) => (
+                                      <button
+                                        key={s}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setStatusDropdownId(null);
+                                          if (s === task.status) return;
+                                          if (s === "done") { setMarkDoneTaskId(task.id); return; }
+                                          applyTaskStatus(task.id, s);
+                                        }}
+                                        className={`w-full px-3 py-2 text-left flex items-center gap-2 text-sm hover:bg-slate-50 ${s === task.status ? "font-bold" : ""}`}
+                                      >
+                                        <TaskStatusBadge status={s} />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </div>
                             <button
                               onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
                               className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
