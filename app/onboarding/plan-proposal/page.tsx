@@ -26,6 +26,7 @@ import EditMeetingSheet from "@/components/onboarding/EditMeetingSheet";
 import VersionHistorySheet, { type PlanVersionSummary } from "@/components/onboarding/VersionHistorySheet";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { apiFetch } from "@/utils/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -530,7 +531,7 @@ function PlanProposalContent() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-black/60">Loading plan...</p>
+          <LoadingSpinner variant="inline" message="Loading plan..." />
         )}
       </div>
     );

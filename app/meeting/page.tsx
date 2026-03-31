@@ -7,6 +7,7 @@ import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { BottomNav } from "@/components/BottomNav";
 import { useLiff } from "@/provider/LiffProvider";
 import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const DEV_GROUP_ID = "Cgroup_shared_001";
 
@@ -64,7 +65,7 @@ export default function MeetingSelectProjectPage() {
 
         <section className="flex flex-col gap-3">
           {loading && (
-            <p className="text-center text-gray-400 py-8">Loading projects…</p>
+            <LoadingSpinner variant="inline" message="Loading projects..." />
           )}
           {!loading && projects.length === 0 && (
             <p className="text-center text-gray-400 py-8">No approved projects yet. Approve a project first to create a meeting.</p>

@@ -6,6 +6,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
 import { ChevronRightIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useLiff } from "@/provider/LiffProvider";
 import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
 import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
@@ -128,11 +129,7 @@ export default function MeetingInfoEditPage({
   }, [isReady, id]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col min-h-dvh items-center justify-center">
-        <p className="text-santi-muted font-medium">Loading...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading meeting..." />;
   }
 
   if (error || !meeting) {

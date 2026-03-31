@@ -11,6 +11,7 @@ import { useLiff } from "@/provider/LiffProvider";
 import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
 import { getProject } from "@/utils/getProject";
 import { apiFetch } from "@/utils/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type Member = { line_user_id: string; display_name: string; picture_url: string | null };
 
@@ -263,14 +264,7 @@ function MeetingDetailsContent() {
       )}
 
       {/* Loading Modal */}
-      {submitting && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[2rem] p-8 shadow-2xl flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-santi-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-black font-semibold text-lg">Creating meeting...</p>
-          </div>
-        </div>
-      )}
+      {submitting && <LoadingSpinner variant="overlay" message="Creating meeting..." />}
 
       {/* Confirmation Modal */}
       {showConfirm && (

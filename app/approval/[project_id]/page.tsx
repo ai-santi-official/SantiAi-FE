@@ -20,6 +20,7 @@ import {
 } from "@/components/icons";
 import { useLiff } from "@/provider/LiffProvider";
 import { apiFetch } from "@/utils/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
 const TASK_COLORS = [
@@ -299,19 +300,20 @@ export default function ApprovalPage() {
   };
 
   if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-dvh bg-santi-secondary gap-3">
-        <p className="text-sm text-black/60">{loadError ?? "Loading plan..."}</p>
-        {loadError && (
+    if (loadError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-dvh bg-santi-secondary gap-3">
+          <p className="text-sm text-black/60">{loadError}</p>
           <button
             onClick={() => { setLoadError(null); window.location.reload(); }}
             className="px-4 py-2 bg-santi-primary rounded-xl text-sm font-bold"
           >
             Retry
           </button>
-        )}
-      </div>
-    );
+        </div>
+      );
+    }
+    return <LoadingSpinner message="Loading plan..." />;
   }
 
   const { project, plan_version } = data;

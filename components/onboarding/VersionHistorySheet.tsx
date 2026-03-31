@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/utils/api";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const INITIAL_VISIBLE = 5;
 
@@ -95,7 +96,7 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
           <h2 className="text-base font-bold text-black mb-4">Version History</h2>
 
           {loading ? (
-            <p className="text-sm text-black/60 text-center py-8">Loading...</p>
+            <LoadingSpinner variant="inline" message="Loading versions..." />
           ) : versions.length === 0 ? (
             <p className="text-sm text-black/60 text-center py-8">No versions found</p>
           ) : (

@@ -6,6 +6,7 @@ import { useLiff } from "@/provider/LiffProvider";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon, CalendarDotIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon, MeetingIcon, TrashIcon, PlusIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import EditTaskSheet from "@/components/onboarding/EditTaskSheet";
 import EditMeetingSheet from "@/components/onboarding/EditMeetingSheet";
 import VersionHistorySheet from "@/components/onboarding/VersionHistorySheet";
@@ -524,11 +525,7 @@ function ProjectInfoEditContent({
 
   // ── Loading / Error ──
   if (loading) {
-    return (
-      <div className="flex flex-col min-h-dvh items-center justify-center">
-        <p className="text-santi-muted font-medium">Loading...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading project..." />;
   }
 
   if (error || !project) {

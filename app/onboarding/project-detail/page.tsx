@@ -8,6 +8,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { SparklesIcon, WarningIcon } from "@/components/icons";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getProject } from "@/utils/getProject";
 
 export default function ProjectDetailPage() {
@@ -161,11 +162,7 @@ function ProjectDetailContent() {
     : [];
 
   if (prefilling) {
-    return (
-      <div className="flex flex-col min-h-dvh items-center justify-center">
-        <p className="text-santi-muted font-medium">Loading project details...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading project details..." />;
   }
 
   return (
