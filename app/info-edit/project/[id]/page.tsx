@@ -72,6 +72,12 @@ function formatMeetingTime(iso: string) {
   return `${datePart} · ${h}:${m}`;
 }
 
+/** Extract YYYY-MM-DD in local time (avoids UTC date mismatch). */
+function localDateStr(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+}
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -132,7 +138,7 @@ function buildCalendarCells(
   const offset = (firstDayJS + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const deadlineDay = deadline.slice(0, 10);
-  const meetingDates = new Set(meetings.map((m) => m.datetime.slice(0, 10)));
+  const meetingDates = new Set(meetings.map((m) => localDateStr(m.datetime)));
 
   const cells: CalCell[] = [];
   for (let i = 0; i < offset; i++) {
@@ -184,7 +190,7 @@ function buildTimelineGroups(tasks: ColoredTask[], meetings: DisplayMeeting[]): 
 
   // Group meetings by date
   meetings.forEach((meeting) => {
-    const key = meeting.datetime.slice(0, 10);
+    const key = localDateStr(meeting.datetime);
     if (!map.has(key)) {
       map.set(key, {
         dateKey: key,
@@ -340,7 +346,7 @@ function ProjectInfoEditContent({
         // Init calendar to earliest task/meeting date
         const allDates = [
           ...coloredTasks.map((t) => t.start_date).filter(Boolean),
-          ...rawMeetings.map((m) => m.meeting_time.slice(0, 10)),
+          ...rawMeetings.map((m) => localDateStr(m.meeting_time)),
         ].sort();
         if (allDates.length > 0) {
           const d = new Date(allDates[0] + "T00:00:00");
@@ -425,7 +431,7 @@ function ProjectInfoEditContent({
     setMeetings((prev) => prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m));
     try {
       const dt = new Date(updated.datetime);
-      const date = updated.datetime.slice(0, 10);
+      const date = localDateStr(updated.datetime);
       const startH = dt.getHours().toString().padStart(2, "0");
       const startM = dt.getMinutes().toString().padStart(2, "0");
       const endTotal = dt.getHours() * 60 + dt.getMinutes() + (updated.duration_minutes ?? 60);
@@ -556,7 +562,7 @@ function ProjectInfoEditContent({
   // Calendar nav bounds
   const allDates = [
     ...tasks.map((t) => t.start_date).filter(Boolean),
-    ...meetings.map((m) => m.datetime.slice(0, 10)),
+    ...meetings.map((m) => localDateStr(m.datetime)),
     deadlineStr.slice(0, 10),
   ].filter(Boolean).sort();
   const minDate = allDates[0] ?? new Date().toISOString().slice(0, 10);
