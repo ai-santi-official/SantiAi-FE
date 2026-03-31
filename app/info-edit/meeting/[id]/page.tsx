@@ -8,9 +8,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useLiff } from "@/provider/LiffProvider";
 import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
-import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
-
-const DEV_GROUP_ID = "Cgroup_shared_001";
+import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
 
 const REPEAT_OPTIONS = [
   { label: "None", value: "none" },
@@ -72,11 +70,10 @@ export default function MeetingInfoEditPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
-  const { groupId, isReady } = useLiff();
-  const lineGroupId = groupId ?? DEV_GROUP_ID;
+  const { isReady } = useLiff();
 
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
-  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [members, setMembers] = useState<{ user_id: string; display_name: string | null; picture_url: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,23 +89,26 @@ export default function MeetingInfoEditPage({
   const [saved, setSaved] = useState(false);
   const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
 
-  // Fetch meeting + members on mount
+  // Fetch meeting + project members on mount
   useEffect(() => {
     if (!isReady) return;
-    Promise.all([
-      getMeeting(id),
-      getGroupMembers(lineGroupId),
-    ])
-      .then(([meetingData, membersData]) => {
+    getMeeting(id)
+      .then(async (meetingData) => {
         setMeeting(meetingData);
-        setMembers(membersData.members);
+        const projectMembers = await getProjectMembers(meetingData.project_id);
+        setMembers(projectMembers.map((m) => ({
+          user_id: m.user_id,
+          display_name: m.display_name,
+          picture_url: m.picture_url,
+        })));
 
         // Initialize form state from API data
         setMeetingName(meetingData.meeting_title);
-        const meetingDate = meetingData.meeting_time.slice(0, 10);
+        const mt = new Date(meetingData.meeting_time);
+        // Use local time (browser is in Bangkok) for both date and hours
+        const meetingDate = `${mt.getFullYear()}-${pad(mt.getMonth() + 1)}-${pad(mt.getDate())}`;
         setDate(meetingDate);
 
-        const mt = new Date(meetingData.meeting_time);
         const startH = mt.getHours();
         const startM = mt.getMinutes();
         const dur = meetingData.duration_minutes ?? 60;
@@ -125,7 +125,7 @@ export default function MeetingInfoEditPage({
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [isReady, id, lineGroupId]);
+  }, [isReady, id]);
 
   if (loading) {
     return (
@@ -146,8 +146,8 @@ export default function MeetingInfoEditPage({
     );
   }
 
-  const origDate = meeting.meeting_time.slice(0, 10);
   const origMt = new Date(meeting.meeting_time);
+  const origDate = `${origMt.getFullYear()}-${pad(origMt.getMonth() + 1)}-${pad(origMt.getDate())}`;
   const origStartH = origMt.getHours();
   const origStartM = origMt.getMinutes();
   const origDur = meeting.duration_minutes ?? 60;
