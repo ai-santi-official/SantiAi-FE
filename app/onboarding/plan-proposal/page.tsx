@@ -29,7 +29,7 @@ import { apiFetch } from "@/utils/api";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  todo:  { label: "To Do",  className: "bg-slate-100 text-slate-500" },
+  todo:  { label: "To Do",  className: "bg-blue-100 text-blue-600" },
   doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
   done:  { label: "Done",   className: "bg-green-100 text-green-700" },
 };
