@@ -228,6 +228,8 @@ function ProjectDetailContent() {
 
       <OnboardingFooter onContinue={handleContinue} disabled={!canContinue || submitting} label={submitting ? "Checking..." : "Continue"} />
 
+      {submitting && <LoadingSpinner variant="overlay" message="Checking your project..." />}
+
       {safeguardReason && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" />

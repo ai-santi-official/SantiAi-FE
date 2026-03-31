@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
@@ -8,6 +8,14 @@ import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { useLiff } from "@/provider/LiffProvider";
 import { apiFetch } from "@/utils/api";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+
+const PLAN_STAGE_MESSAGES = [
+  "Saving preferences...",
+  "Generating your plan...",
+  "Santi is thinking...",
+  "Almost there...",
+];
 
 export default function MemberPreferencesPage() {
   const router = useRouter();
@@ -16,6 +24,8 @@ export default function MemberPreferencesPage() {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [stageIndex, setStageIndex] = useState(0);
+  const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!isReady) return;
@@ -33,9 +43,24 @@ export default function MemberPreferencesPage() {
     setDescriptions((prev) => ({ ...prev, [id]: value }));
   };
 
+  const startStageTimer = () => {
+    setStageIndex(0);
+    stageTimer.current = setInterval(() => {
+      setStageIndex((prev) => Math.min(prev + 1, PLAN_STAGE_MESSAGES.length - 1));
+    }, 3000);
+  };
+
+  const stopStageTimer = () => {
+    if (stageTimer.current) {
+      clearInterval(stageTimer.current);
+      stageTimer.current = null;
+    }
+  };
+
   const handleCreatePlan = async () => {
     if (!projectId) return;
     setSubmitting(true);
+    startStageTimer();
     try {
       const memberPreferences = Object.entries(descriptions)
         .filter(([, pref]) => pref.trim() !== "")
@@ -49,6 +74,9 @@ export default function MemberPreferencesPage() {
         if (!res.ok) throw new Error(`Failed to update preferences: ${res.status}`);
       }
 
+      // Jump to "Generating your plan..." stage
+      setStageIndex(1);
+
       // Trigger AI plan generation
       const planRes = await apiFetch(`/api/v1/ai/plans/projects/${projectId}`, {
         method: "POST",
@@ -60,6 +88,7 @@ export default function MemberPreferencesPage() {
     } catch (err) {
       console.error("Failed to update preferences:", err);
     } finally {
+      stopStageTimer();
       setSubmitting(false);
     }
   };
@@ -104,7 +133,9 @@ export default function MemberPreferencesPage() {
         </div>
       </main>
 
-      <OnboardingFooter onContinue={handleCreatePlan} label={submitting ? "Saving..." : "Create Plan"} disabled={submitting} />
+      <OnboardingFooter onContinue={handleCreatePlan} label={submitting ? "Creating..." : "Create Plan"} disabled={submitting} />
+
+      {submitting && <LoadingSpinner variant="overlay" message={PLAN_STAGE_MESSAGES[stageIndex]} />}
     </>
   );
 }
