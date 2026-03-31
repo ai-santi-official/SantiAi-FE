@@ -190,10 +190,16 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
 
   const handleConfirm = () => {
     if (!selectedDay) return;
-    const date = dateOnly
-      ? new Date(selectedDay.y, selectedDay.m, selectedDay.d)
-      : new Date(selectedDay.y, selectedDay.m, selectedDay.d, hour, minute);
-    onChange(date.toISOString());
+    if (dateOnly) {
+      // Return YYYY-MM-DD string directly to avoid UTC date shift
+      const y = selectedDay.y;
+      const m = (selectedDay.m + 1).toString().padStart(2, "0");
+      const d = selectedDay.d.toString().padStart(2, "0");
+      onChange(`${y}-${m}-${d}`);
+    } else {
+      const date = new Date(selectedDay.y, selectedDay.m, selectedDay.d, hour, minute);
+      onChange(date.toISOString());
+    }
     setIsOpen(false);
   };
 
