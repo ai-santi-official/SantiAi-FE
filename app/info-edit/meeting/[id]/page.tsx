@@ -4,12 +4,12 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangePicker";
-import { ChevronRightIcon } from "@/components/icons";
+import { ChevronRightIcon, TrashIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useLiff } from "@/provider/LiffProvider";
 import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
-import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
+import { getProjectMembers, deleteMeetingApi } from "@/utils/getProjectTasksAndMeetings";
 
 const REPEAT_OPTIONS = [
   { label: "None", value: "none" },
@@ -89,6 +89,8 @@ export default function MeetingInfoEditPage({
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<"ask" | "recurring" | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch meeting + project members on mount
   useEffect(() => {
@@ -213,6 +215,27 @@ export default function MeetingInfoEditPage({
       router.back();
     }
     setConfirm(null);
+  };
+
+  const handleDeleteClick = () => {
+    if (meeting.recurrence !== "none") {
+      setDeleteConfirm("recurring");
+    } else {
+      setDeleteConfirm("ask");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    try {
+      await deleteMeetingApi(id);
+      router.back();
+    } catch (err) {
+      console.error("Failed to delete meeting:", err);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(null);
+    }
   };
 
   return (
@@ -351,19 +374,34 @@ export default function MeetingInfoEditPage({
               </button>
             );
           })}
+          {/* Delete Meeting */}
+          <button
+            onClick={handleDeleteClick}
+            disabled={deleting}
+            className="w-full py-3 rounded-santi border-2 border-red-200 text-sm font-bold text-red-500 active:bg-red-50 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            <TrashIcon className="w-4 h-4" />
+            {deleting ? "Deleting..." : "Delete Meeting"}
+          </button>
         </div>
       </main>
 
       {/* Spacer for fixed footer */}
-      <div className="h-28" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+      <div className="h-32" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 w-full footer-safe bg-white/80 backdrop-blur-sm border-t border-santi-muted/10">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto flex gap-3">
+          <button
+            onClick={() => router.back()}
+            className="flex-1 bg-white py-3.5 rounded-santi font-bold text-sm text-black border-2 border-slate-200 active:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
           <button
             onClick={handleSaveClick}
-            disabled={!canSave}
-            className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={!canSave || !isDirty}
+            className="flex-1 bg-santi-primary py-3.5 rounded-santi font-bold text-sm text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <SaveIcon />
             {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
@@ -400,6 +438,48 @@ export default function MeetingInfoEditPage({
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
         />
+      )}
+      {deleteConfirm === "ask" && (
+        <ConfirmDialog
+          title="Delete meeting?"
+          message="This meeting will be permanently removed. This action cannot be undone."
+          confirmLabel={deleting ? "Deleting..." : "Delete"}
+          cancelLabel="Cancel"
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+      {deleteConfirm === "recurring" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteConfirm(null)} />
+          <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-sm w-full shadow-xl space-y-3">
+            <h3 className="text-base font-bold text-black text-center">Delete recurring meeting?</h3>
+            <p className="text-sm text-black/60 text-center">This is a recurring meeting. Would you like to delete only this occurrence or all occurrences?</p>
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="w-full py-3 rounded-santi bg-red-500 text-white font-bold text-sm active:bg-red-600 transition-colors disabled:opacity-40"
+              >
+                {deleting ? "Deleting..." : "Delete this meeting only"}
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="w-full py-3 rounded-santi border-2 border-red-200 text-red-500 font-bold text-sm active:bg-red-50 transition-colors disabled:opacity-40"
+              >
+                {deleting ? "Deleting..." : "Delete all occurrences"}
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="w-full py-3 rounded-santi text-black/60 font-bold text-sm active:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
