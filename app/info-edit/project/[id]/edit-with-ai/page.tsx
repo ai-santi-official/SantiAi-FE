@@ -174,7 +174,7 @@ export default function ActiveEditWithAiPage() {
                 {msg.id !== "greeting" && (
                   <button
                     onClick={() => router.push(`/info-edit/project/${projectId}`)}
-                    className="flex items-center gap-1 mt-1.5 ml-1 text-xs font-medium text-santi-primary active:opacity-70 transition-opacity"
+                    className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full bg-santi-primary/10 border border-santi-primary/30 text-xs font-semibold text-santi-primary active:bg-santi-primary/20 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -212,6 +212,7 @@ export default function ActiveEditWithAiPage() {
                 Santi
               </p>
               <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-santi-secondary">
+                <p className="text-xs text-black/50 mb-1.5">Cooking up your plan...</p>
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:150ms]" />
