@@ -7,6 +7,7 @@ export type ProjectDetail = {
   final_due_date: string | null;
   project_detail: string | null;
   final_deliverable: string | null;
+  created_by_user_id: string | null;
 };
 
 export async function getProject(projectId: string): Promise<ProjectDetail> {

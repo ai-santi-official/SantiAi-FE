@@ -283,7 +283,7 @@ function ProjectInfoEditContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { id } = use(params);
-  const { isReady } = useLiff();
+  const { isReady, profile } = useLiff();
 
   // ── Data state ──
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -481,6 +481,20 @@ function ProjectInfoEditContent({
     loadData();
   };
 
+  // ── Permissions ──
+  // Resolve the current user's internal user_id from their LINE profile
+  const currentUserId = members.find((m) => m.line_user_id === profile?.userId)?.user_id ?? null;
+  const isCreator = !!(currentUserId && project?.created_by_user_id === currentUserId);
+
+  /** True if the current user may edit/delete this task (creator can edit all; assignees can edit their own). */
+  const canEditTask = (task: ColoredTask) => {
+    if (isCreator) return true;
+    return !!(currentUserId && task.assigned_to.includes(currentUserId));
+  };
+
+  /** True if the current user may edit/delete this meeting (creator only). */
+  const canEditMeeting = () => isCreator;
+
   // ── Save project metadata ──
   const origDeadline = project?.final_due_date ? project.final_due_date.slice(0, 10) : "";
   const isDirty = project ? (
@@ -628,9 +642,28 @@ function ProjectInfoEditContent({
           <div>
             <p className="text-xs text-santi-muted font-semibold uppercase tracking-wider">Project</p>
             <p className="font-bold text-black">{project.project_name}</p>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${statusCfg.className}`}>
-              {statusCfg.label}
-            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${statusCfg.className}`}>
+                {statusCfg.label}
+              </span>
+              {(() => {
+                const creator = members.find((m) => m.user_id === project.created_by_user_id);
+                if (!creator) return null;
+                return (
+                  <div className="flex items-center gap-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={creator.picture_url ?? "/default-avatar.png"}
+                      alt={creator.display_name ?? "Creator"}
+                      className="w-4 h-4 rounded-full object-cover bg-slate-100"
+                    />
+                    <span className="text-[10px] text-santi-muted font-medium">
+                      Created by {creator.display_name ?? "Unknown"}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
 
@@ -815,12 +848,14 @@ function ProjectInfoEditContent({
                                 </>
                               )}
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
-                              className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                            >
-                              <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
-                            </button>
+                            {canEditTask(task) && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
+                                className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                              >
+                                <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                              </button>
+                            )}
                             <ChevronDownIcon className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
                           </div>
                         </div>
@@ -841,12 +876,14 @@ function ProjectInfoEditContent({
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <AssigneeAvatars ids={task.assigned_to} members={members} />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "task", id: task.id }); }}
-                                className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                              >
-                                <TrashIcon className="w-4 h-4 text-red-400" />
-                              </button>
+                              {canEditTask(task) && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "task", id: task.id }); }}
+                                  className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                                >
+                                  <TrashIcon className="w-4 h-4 text-red-400" />
+                                </button>
+                              )}
                             </div>
                           </>
                         )}
@@ -872,12 +909,14 @@ function ProjectInfoEditContent({
                             <p className="font-semibold text-sm text-black leading-snug">{meeting.title}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
-                              className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
-                            >
-                              <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
-                            </button>
+                            {canEditMeeting() && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
+                                className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
+                              >
+                                <PencilIcon className="w-3.5 h-3.5 text-santi-muted" />
+                              </button>
+                            )}
                             <ChevronDownIcon className={`w-4 h-4 text-santi-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
                           </div>
                         </div>
@@ -889,12 +928,14 @@ function ProjectInfoEditContent({
                             </div>
                             <div className="flex items-center justify-between mt-2">
                               <AssigneeAvatars ids={meeting.participants} members={members} />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "meeting", id: meeting.id }); }}
-                                className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                              >
-                                <TrashIcon className="w-4 h-4 text-red-400" />
-                              </button>
+                              {canEditMeeting() && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "meeting", id: meeting.id }); }}
+                                  className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                                >
+                                  <TrashIcon className="w-4 h-4 text-red-400" />
+                                </button>
+                              )}
                             </div>
                           </>
                         )}
