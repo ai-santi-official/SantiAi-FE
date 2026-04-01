@@ -188,6 +188,7 @@ export default function MeetingInfoEditPage({
 
   const handleConfirm = async () => {
     if (confirm === "save") {
+      setConfirm(null);
       setSaving(true);
       try {
         const startTimeStr = formatTime(timeRange.startHour, timeRange.startMinute);
@@ -212,9 +213,9 @@ export default function MeetingInfoEditPage({
         setSaving(false);
       }
     } else {
+      setConfirm(null);
       router.back();
     }
-    setConfirm(null);
   };
 
   const handleDeleteClick = () => {
@@ -478,6 +479,16 @@ export default function MeetingInfoEditPage({
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Saving overlay */}
+      {saving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-[200px] w-full shadow-xl flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-3 border-santi-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-black">Saving...</p>
           </div>
         </div>
       )}
