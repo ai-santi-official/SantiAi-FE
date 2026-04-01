@@ -232,6 +232,7 @@ export default function ApprovalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [showApprovedModal, setShowApprovedModal] = useState(false);
   const [calDisplayYear, setCalDisplayYear] = useState(new Date().getFullYear());
   const [calDisplayMonth, setCalDisplayMonth] = useState(new Date().getMonth());
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -290,7 +291,13 @@ export default function ApprovalPage() {
       if (updated.ok) {
         const body = await updated.json();
         setApprovals(body.approvals ?? []);
-        if (body.approval_summary) setApprovalSummary(body.approval_summary);
+        if (body.approval_summary) {
+          setApprovalSummary(body.approval_summary);
+          // Show success modal when all members have approved
+          if (body.approval_summary.approved_count === body.approval_summary.total_members && body.approval_summary.total_members > 0) {
+            setShowApprovedModal(true);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to approve:", err);
@@ -610,6 +617,28 @@ export default function ApprovalPage() {
           </button>
         )}
       </div>
+
+      {/* All Approved Modal */}
+      {showApprovedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-sm w-full shadow-xl text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-black">Project Approved!</h3>
+            <p className="text-sm text-black/60">All members have approved the plan. The project is now active.</p>
+            <button
+              onClick={() => { setShowApprovedModal(false); router.push("/info-edit"); }}
+              className="w-full py-3 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
