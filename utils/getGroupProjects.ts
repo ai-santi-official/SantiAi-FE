@@ -3,6 +3,7 @@ export type GroupProject = {
   project_name: string;
   project_status: string;
   final_due_date: string | null;
+  created_by_user_id: string | null;
 };
 
 export type GroupProjectsResponse = {

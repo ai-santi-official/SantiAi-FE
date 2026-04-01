@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useLiff } from "@/provider/LiffProvider";
 import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
 import { getGroupMeetings, type GroupMeeting } from "@/utils/getGroupMeetings";
+import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 
 const DEV_GROUP_ID = "Cgroup_shared_001";
 
@@ -101,13 +102,14 @@ function projectRoute(project: GroupProject): string {
 
 export default function InfoEditPage() {
   const router = useRouter();
-  const { groupId, isReady } = useLiff();
+  const { groupId, isReady, profile } = useLiff();
   const lineGroupId = groupId ?? DEV_GROUP_ID;
   const [query, setQuery] = useState("");
   const [showPastProjects, setShowPastProjects] = useState(false);
   const [showPastMeetings, setShowPastMeetings] = useState(false);
   const [projects, setProjects] = useState<GroupProject[]>([]);
   const [meetings, setMeetings] = useState<GroupMeeting[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -115,20 +117,28 @@ export default function InfoEditPage() {
     Promise.all([
       getGroupProjects(lineGroupId).then((res) => setProjects(res.projects)),
       getGroupMeetings(lineGroupId).then((res) => setMeetings(res.meetings)),
+      getGroupMembers(lineGroupId).then((res) => setGroupMembers(res.members)),
     ])
       .catch((err) => console.error("Failed to load data:", err))
       .finally(() => setLoading(false));
   }, [isReady, lineGroupId]);
+
+  // Resolve current user's internal user_id from LINE profile
+  const currentUserId = groupMembers.find((m) => m.line_user_id === profile?.userId)?.user_id ?? null;
 
   const now = new Date();
 
   const STATUS_ORDER: Record<string, number> = { approved: 0, waiting_approval: 1, draft: 2 };
 
   const activeProjects = useMemo(() =>
-    projects.filter((p) => p.project_status !== "done" &&
-      (p.project_name || "").toLowerCase().includes(query.toLowerCase()))
+    projects.filter((p) => {
+      if (p.project_status === "done") return false;
+      // Only show draft projects to their creator
+      if (p.project_status === "draft" && p.created_by_user_id !== currentUserId) return false;
+      return (p.project_name || "").toLowerCase().includes(query.toLowerCase());
+    })
       .sort((a, b) => (STATUS_ORDER[a.project_status] ?? 9) - (STATUS_ORDER[b.project_status] ?? 9)),
-    [projects, query]);
+    [projects, query, currentUserId]);
 
   const pastProjects = useMemo(() =>
     projects.filter((p) => p.project_status === "done" &&
