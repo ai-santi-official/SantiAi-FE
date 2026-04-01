@@ -602,10 +602,7 @@ function ProjectInfoEditContent({
               History
             </button>
             <button
-              onClick={() => {
-                try { (window as any).liff?.closeWindow(); } catch { /* ignore */ }
-                router.back();
-              }}
+              onClick={() => router.push("/info-edit")}
               aria-label="Close"
               className="p-1.5 rounded-full bg-white/60 text-black active:bg-white/80 transition-colors"
             >
@@ -936,23 +933,44 @@ function ProjectInfoEditContent({
       </main>
 
       {/* Spacer for fixed footer */}
-      <div className="h-28" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+      <div className="h-36" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
 
-      {/* Footer — Save project details */}
-      {isDirty && (
-        <footer className="fixed bottom-0 left-0 w-full footer-safe bg-white/80 backdrop-blur-sm border-t border-santi-muted/10 z-30">
-          <div className="max-w-md mx-auto">
+      {/* Fixed footer */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-santi-muted/10 z-30">
+        <div className="max-w-md mx-auto">
+          {/* Save bar — only when dirty */}
+          {isDirty && (
+            <div className="px-6 pt-3">
+              <button
+                onClick={handleSaveClick}
+                disabled={!canSave}
+                className="w-full bg-santi-primary py-3 rounded-santi font-bold text-sm text-black active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <SaveIcon />
+                {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+              </button>
+            </div>
+          )}
+
+          {/* Edit with AI + Close */}
+          <div className="flex gap-3 px-6 pt-3 pb-2">
             <button
-              onClick={handleSaveClick}
-              disabled={!canSave}
-              className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={() => router.push(`/info-edit/project/${id}/edit-with-ai`)}
+              className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
             >
-              <SaveIcon />
-              {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+              Edit with AI
+            </button>
+            <button
+              onClick={() => router.push("/info-edit")}
+              className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+            >
+              Close
             </button>
           </div>
-        </footer>
-      )}
+
+          <div style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+        </div>
+      </div>
 
       {/* Edit Sheets */}
       {editingItem?.type === "task" && (() => {

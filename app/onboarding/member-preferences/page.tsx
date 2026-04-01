@@ -14,6 +14,7 @@ const PLAN_STAGE_MESSAGES = [
   "Saving preferences...",
   "Generating your plan...",
   "Santi is thinking...",
+  "Organizing tasks and meetings...",
   "Almost there...",
 ];
 
@@ -47,7 +48,7 @@ export default function MemberPreferencesPage() {
     setStageIndex(0);
     stageTimer.current = setInterval(() => {
       setStageIndex((prev) => Math.min(prev + 1, PLAN_STAGE_MESSAGES.length - 1));
-    }, 3000);
+    }, 4000);
   };
 
   const stopStageTimer = () => {
