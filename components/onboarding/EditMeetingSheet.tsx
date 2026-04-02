@@ -7,6 +7,10 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 type Props = {
   meeting: PlanMeeting;
   members: PlanMember[];
+  /** Earliest selectable date (ISO, e.g. project start). */
+  minDate?: string;
+  /** Latest selectable date (ISO, e.g. project deadline). */
+  maxDate?: string;
   onSave: (updated: PlanMeeting) => void;
   onClose: () => void;
 };
@@ -14,7 +18,7 @@ type Props = {
 const RECURRENCE_OPTIONS = ["none", "weekly", "biweekly"] as const;
 type Recurrence = typeof RECURRENCE_OPTIONS[number];
 
-export default function EditMeetingSheet({ meeting, members, onSave, onClose }: Props) {
+export default function EditMeetingSheet({ meeting, members, minDate, maxDate, onSave, onClose }: Props) {
   const [title, setTitle]                   = useState(meeting.title);
   const [datetime, setDatetime]             = useState(meeting.datetime.slice(0, 16));
   const [durationMinutes, setDurationMinutes] = useState(meeting.duration_minutes ?? 30);
@@ -77,6 +81,8 @@ export default function EditMeetingSheet({ meeting, members, onSave, onClose }: 
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary"
                 value={datetime}
                 onChange={(e) => setDatetime(e.target.value)}
+                min={minDate ? minDate.slice(0, 10) + "T00:00" : undefined}
+                max={maxDate ? maxDate.slice(0, 10) + "T23:59" : undefined}
               />
             </div>
 

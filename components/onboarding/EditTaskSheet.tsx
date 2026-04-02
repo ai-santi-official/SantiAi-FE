@@ -9,6 +9,10 @@ type Props = {
   task: PlanTask;
   members: PlanMember[];
   showStatus?: boolean;
+  /** Earliest selectable date (ISO, e.g. project start). Defaults to today. */
+  minDate?: string;
+  /** Latest selectable date (ISO, e.g. project deadline). */
+  maxDate?: string;
   onSave: (updated: PlanTask) => void;
   onClose: () => void;
 };
@@ -29,7 +33,7 @@ function dateToIso(d: string): string {
 
 const isCreate = (task: PlanTask) => !task.title && !task.start_date && !task.end_date;
 
-export default function EditTaskSheet({ task, members, showStatus = false, onSave, onClose }: Props) {
+export default function EditTaskSheet({ task, members, showStatus = false, minDate, maxDate, onSave, onClose }: Props) {
   const [title, setTitle]           = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [startDate, setStartDate]   = useState(task.start_date);
@@ -111,6 +115,8 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
                   onChange={(iso) => setStartDate(iso)}
                   placeholder="Select start"
                   dateOnly
+                  minDate={minDate}
+                  maxDate={maxDate}
                 />
               </div>
               <div className="flex-1">
@@ -120,6 +126,8 @@ export default function EditTaskSheet({ task, members, showStatus = false, onSav
                   onChange={(iso) => setEndDate(iso)}
                   placeholder="Select end"
                   dateOnly
+                  minDate={minDate}
+                  maxDate={maxDate}
                 />
               </div>
             </div>

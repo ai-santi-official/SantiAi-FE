@@ -10,6 +10,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useLiff } from "@/provider/LiffProvider";
 import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
 import { getProjectMembers, deleteMeetingApi } from "@/utils/getProjectTasksAndMeetings";
+import { getProject } from "@/utils/getProject";
 
 const REPEAT_OPTIONS = [
   { label: "None", value: "none" },
@@ -75,6 +76,7 @@ export default function MeetingInfoEditPage({
 
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
   const [members, setMembers] = useState<{ user_id: string; display_name: string | null; picture_url: string | null }[]>([]);
+  const [projectDeadline, setProjectDeadline] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +100,11 @@ export default function MeetingInfoEditPage({
     getMeeting(id)
       .then(async (meetingData) => {
         setMeeting(meetingData);
-        const projectMembers = await getProjectMembers(meetingData.project_id);
+        const [projectMembers, projectData] = await Promise.all([
+          getProjectMembers(meetingData.project_id),
+          getProject(meetingData.project_id),
+        ]);
+        if (projectData.final_due_date) setProjectDeadline(projectData.final_due_date.slice(0, 10));
         setMembers(projectMembers.map((m) => ({
           user_id: m.user_id,
           display_name: m.display_name,
@@ -288,6 +294,7 @@ export default function MeetingInfoEditPage({
               onChange={setDate}
               placeholder="Select date"
               dateOnly
+              maxDate={projectDeadline || undefined}
             />
             <button
               type="button"

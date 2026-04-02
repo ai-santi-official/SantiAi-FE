@@ -1021,6 +1021,7 @@ function ProjectInfoEditContent({
             task={task}
             members={members}
             showStatus
+            maxDate={deadlineStr}
             onSave={handleSaveTask}
             onClose={() => setEditingItem(null)}
           />
@@ -1032,6 +1033,7 @@ function ProjectInfoEditContent({
           <EditMeetingSheet
             meeting={meeting}
             members={members}
+            maxDate={deadlineStr}
             onSave={handleSaveMeeting}
             onClose={() => setEditingItem(null)}
           />
@@ -1074,6 +1076,7 @@ function ProjectInfoEditContent({
             status: "todo",
           }}
           members={members}
+          maxDate={deadlineStr}
           onSave={handleCreateTask}
           onClose={() => setShowCreateTask(false)}
         />

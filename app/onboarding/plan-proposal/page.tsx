@@ -944,6 +944,7 @@ function PlanProposalContent() {
             task={task}
             members={project.members}
             showStatus={isViewMode}
+            maxDate={project.deadline}
             onSave={handleSaveTask}
             onClose={() => setEditingItem(null)}
           />
@@ -955,6 +956,7 @@ function PlanProposalContent() {
           <EditMeetingSheet
             meeting={meeting}
             members={project.members}
+            maxDate={project.deadline}
             onSave={handleSaveMeeting}
             onClose={() => setEditingItem(null)}
           />
@@ -974,6 +976,7 @@ function PlanProposalContent() {
             status: "todo",
           }}
           members={project.members}
+          maxDate={project.deadline}
           onSave={handleCreateTask}
           onClose={() => setShowCreateTask(false)}
         />
