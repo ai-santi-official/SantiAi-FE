@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeftIcon, SparklesIcon } from "@/components/icons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { apiFetch } from "@/utils/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -21,14 +23,6 @@ function SendIcon({ className }: { className?: string }) {
   );
 }
 
-// ─── Quick-action chips ──────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  "Extend deadlines",
-  "Add a meeting",
-  "Change assignee",
-  "Summarize plan",
-];
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function EditWithAiPage() {
   return <Suspense><EditWithAiContent /></Suspense>;
@@ -38,6 +32,7 @@ function EditWithAiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get("project_id");
+  const t = useTranslations("editWithAi");
 
   const [projectName, setProjectName] = useState("");
   const [projectDeadline, setProjectDeadline] = useState("");
@@ -70,11 +65,10 @@ function EditWithAiContent() {
       {
         id: "greeting",
         role: "assistant",
-        content:
-          "Hi! I'm ready to help you refine your plan. What would you like to change? I can adjust deadlines, add tasks, or reassign members.",
+        content: t("greeting"),
       },
     ]);
-  }, [projectId]);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -106,7 +100,7 @@ function EditWithAiContent() {
       const reasoning =
         data.plan_version?.snapshot?.ai_reasoning ??
         data.plan_version?.snapshot?.plan_rationale ??
-        "Done! I've updated the plan based on your request. Tap \"View full plan\" to see the changes.";
+        t("defaultResponse");
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -118,7 +112,7 @@ function EditWithAiContent() {
       const errMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content: "Sorry, something went wrong. Please try again.",
+        content: t("errorMessage"),
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
@@ -134,6 +128,8 @@ function EditWithAiContent() {
     }
   };
 
+  const chipKeys = ["chipExtendDeadlines", "chipAddMeeting", "chipChangeAssignee", "chipSummarizePlan"] as const;
+
   return (
     <div className="flex flex-col h-dvh bg-white">
       {/* Header */}
@@ -144,7 +140,8 @@ function EditWithAiContent() {
         >
           <ChevronLeftIcon className="w-5 h-5 text-black" />
         </button>
-        <h2 className="text-lg font-bold text-black flex-1 ml-1">Edit with AI</h2>
+        <h2 className="text-lg font-bold text-black flex-1 ml-1">{t("title")}</h2>
+        <LanguageSwitcher />
       </header>
 
       {/* Chat Messages */}
@@ -158,7 +155,7 @@ function EditWithAiContent() {
               </div>
               <div className="flex flex-col gap-1 items-start max-w-[80%]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted ml-1">
-                  Santi
+                  {t("santi")}
                 </p>
                 <div className="text-sm leading-relaxed rounded-2xl rounded-tl-none px-3.5 py-2.5 bg-santi-secondary text-black/80">
                   {msg.content}
@@ -174,7 +171,7 @@ function EditWithAiContent() {
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    View in calendar
+                    {t("viewFullPlan")}
                   </button>
                 )}
               </div>
@@ -183,7 +180,7 @@ function EditWithAiContent() {
             <div key={msg.id} className="flex items-start gap-2.5 justify-end">
               <div className="flex flex-col gap-1 items-end max-w-[80%]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted mr-1">
-                  You
+                  {t("you")}
                 </p>
                 <div className="text-sm leading-relaxed rounded-2xl rounded-tr-none px-3.5 py-2.5 bg-slate-100 text-black/80 border border-slate-200">
                   {msg.content}
@@ -201,10 +198,9 @@ function EditWithAiContent() {
             </div>
             <div className="flex flex-col gap-1 items-start">
               <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted ml-1">
-                Santi
+                {t("santi")}
               </p>
               <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-santi-secondary">
-                <p className="text-xs text-black/50 mb-1.5">Cooking up your plan...</p>
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -219,14 +215,14 @@ function EditWithAiContent() {
       {/* Quick action chips */}
       <div className="px-4 pb-2 shrink-0 overflow-x-auto">
         <div className="flex gap-2 w-max">
-          {QUICK_ACTIONS.map((action) => (
+          {chipKeys.map((key) => (
             <button
-              key={action}
-              onClick={() => { setInput(action); inputRef.current?.focus(); }}
+              key={key}
+              onClick={() => { setInput(t(key)); inputRef.current?.focus(); }}
               disabled={sending}
               className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-black/60 active:border-santi-primary active:text-black transition-all disabled:opacity-40"
             >
-              {action}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -244,7 +240,7 @@ function EditWithAiContent() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Tell Santi what to change..."
+            placeholder={t("inputPlaceholder")}
             disabled={sending}
             className="flex-1 bg-transparent border-none focus:outline-none text-sm py-2 text-black placeholder:text-santi-muted"
           />

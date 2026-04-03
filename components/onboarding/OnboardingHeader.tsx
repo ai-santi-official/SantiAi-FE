@@ -1,3 +1,8 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
 type Props = {
   step: number;
   totalSteps: number;
@@ -5,6 +10,7 @@ type Props = {
 };
 
 export function OnboardingHeader({ step, totalSteps, onBack }: Props) {
+  const t = useTranslations("brand");
   return (
     <header className="bg-santi-secondary pt-10 pb-20 px-6 text-center relative">
       {onBack && (
@@ -29,9 +35,13 @@ export function OnboardingHeader({ step, totalSteps, onBack }: Props) {
         </button>
       )}
 
-      <h1 className="text-4xl font-bold mb-2">Santi</h1>
+      <div className="absolute right-6 top-10">
+        <LanguageSwitcher />
+      </div>
+
+      <h1 className="text-4xl font-bold mb-2">{t("name")}</h1>
       <p className="text-base font-normal text-black/80 mb-8">
-        Make your work easier
+        {t("tagline")}
       </p>
 
       {/* Step indicator: active step = wide pill, others = small dots */}

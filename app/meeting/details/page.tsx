@@ -12,13 +12,14 @@ import { getProjectMembers } from "@/utils/getProjectTasksAndMeetings";
 import { getProject } from "@/utils/getProject";
 import { apiFetch } from "@/utils/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useTranslations } from "next-intl";
 
 type Member = { line_user_id: string; display_name: string; picture_url: string | null };
 
 const REPEAT_OPTIONS = [
-  { label: "None", value: "none" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Biweekly", value: "biweekly" },
+  { key: "none" as const, value: "none" },
+  { key: "weekly" as const, value: "weekly" },
+  { key: "biweekly" as const, value: "biweekly" },
 ] as const;
 
 function pad(n: number) {
@@ -68,6 +69,9 @@ function MeetingDetailsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isReady } = useLiff();
+  const t = useTranslations("meeting");
+  const tc = useTranslations("common");
+  const tl = useTranslations("loading");
   const projectId = searchParams.get("projectId") ?? "";
   const projectName = searchParams.get("projectName") ?? "";
 
@@ -123,7 +127,7 @@ function MeetingDetailsContent() {
   return (
     <>
       <MeetingHeader
-        title="Create Meeting"
+        title={t("createMeeting")}
         step={2}
         totalSteps={2}
         onBack={() => router.back()}
@@ -133,10 +137,10 @@ function MeetingDetailsContent() {
 
         {/* Meeting Name */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Meeting Name</label>
+          <label className="santi-label">{t("meetingName")}</label>
           <input
             className="santi-input"
-            placeholder="e.g. Weekly Sync"
+            placeholder={t("meetingNamePlaceholder")}
             value={meetingName}
             onChange={(e) => setMeetingName(e.target.value)}
           />
@@ -144,7 +148,7 @@ function MeetingDetailsContent() {
 
         {/* Date & Time */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Date &amp; Time</label>
+          <label className="santi-label">{t("dateTime")}</label>
           <div className="space-y-3">
 
             {/* Date card — reuses existing DatePicker */}
@@ -152,7 +156,7 @@ function MeetingDetailsContent() {
               <DatePicker
                 value={date}
                 onChange={setDate}
-                placeholder="Select date"
+                placeholder={t("selectDate")}
                 dateOnly
                 maxDate={projectDueDate ?? undefined}
               />
@@ -177,7 +181,7 @@ function MeetingDetailsContent() {
 
         {/* Repeat */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Repeat</label>
+          <label className="santi-label">{t("repeat")}</label>
           <div className="flex gap-3">
             {REPEAT_OPTIONS.map((opt) => (
               <button
@@ -189,7 +193,7 @@ function MeetingDetailsContent() {
                     : "border border-santi-muted text-black/60 hover:border-santi-primary"
                 }`}
               >
-                {opt.label}
+                {t(opt.key)}
               </button>
             ))}
           </div>
@@ -197,7 +201,7 @@ function MeetingDetailsContent() {
 
         {/* Attendees */}
         <div className="flex flex-col gap-3">
-          <label className="santi-label">Add Attendees</label>
+          <label className="santi-label">{t("addAttendees")}</label>
 
           {/* Select All */}
           <button
@@ -211,7 +215,7 @@ function MeetingDetailsContent() {
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
               <GroupIcon className="w-5 h-5 text-santi-muted" />
             </div>
-            <span className="flex-1 text-sm font-bold text-left">Select All</span>
+            <span className="flex-1 text-sm font-bold text-left">{tc("selectAll")}</span>
             {allSelected
               ? <CheckCircleIcon />
               : <div className="w-6 h-6 rounded-full border-2 border-santi-muted shrink-0" />
@@ -234,7 +238,7 @@ function MeetingDetailsContent() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={member.picture_url ?? "/default-avatar.png"}
-                  alt={member.display_name ?? "Member"}
+                  alt={member.display_name ?? tc("member")}
                   className="w-10 h-10 rounded-full object-cover shrink-0 bg-slate-100"
                 />
                 <span className="flex-1 text-sm font-bold text-left">{member.display_name}</span>
@@ -251,7 +255,7 @@ function MeetingDetailsContent() {
       <OnboardingFooter
         onContinue={() => setShowConfirm(true)}
         disabled={!canSubmit}
-        label="Create Meeting"
+        label={t("createMeeting")}
       />
 
       {/* Time Range Picker */}
@@ -264,7 +268,7 @@ function MeetingDetailsContent() {
       )}
 
       {/* Loading Modal */}
-      {submitting && <LoadingSpinner variant="overlay" message="Creating meeting..." />}
+      {submitting && <LoadingSpinner variant="overlay" message={tl("creatingMeeting")} />}
 
       {/* Confirmation Modal */}
       {showConfirm && (
@@ -273,14 +277,14 @@ function MeetingDetailsContent() {
 
             {/* Header */}
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-black">Meeting Summary</h3>
-              <p className="text-santi-muted text-sm mt-1">Please review the details below</p>
+              <h3 className="text-2xl font-bold text-black">{t("meetingSummary")}</h3>
+              <p className="text-santi-muted text-sm mt-1">{t("reviewDetails")}</p>
             </div>
 
             {/* Details */}
             <div className="space-y-4">
               <div className="flex flex-col border-b border-santi-secondary/50 pb-3">
-                <span className="text-xs uppercase tracking-wider text-santi-muted font-bold">Meeting Name</span>
+                <span className="text-xs uppercase tracking-wider text-santi-muted font-bold">{t("meetingName")}</span>
                 <span className="text-black font-semibold">{meetingName}</span>
               </div>
 
@@ -303,7 +307,7 @@ function MeetingDetailsContent() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-wider text-santi-muted font-bold">Attendees</span>
+                <span className="text-xs uppercase tracking-wider text-santi-muted font-bold">{t("attendees")}</span>
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-3">
                     {selectedMembers.slice(0, 3).map((m) => (
@@ -321,7 +325,7 @@ function MeetingDetailsContent() {
                       </div>
                     )}
                   </div>
-                  <span className="text-sm text-black/60">{selectedIds.size} people</span>
+                  <span className="text-sm text-black/60">{selectedIds.size} {tc("people")}</span>
                 </div>
               </div>
             </div>
@@ -354,14 +358,14 @@ function MeetingDetailsContent() {
                 }}
                 className="w-full h-14 bg-santi-primary text-black font-bold rounded-2xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <span>Create Meeting</span>
+                <span>{t("createMeeting")}</span>
                 <CalendarIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setShowConfirm(false)}
                 className="w-full h-14 border-2 border-santi-secondary text-black/60 font-semibold rounded-2xl"
               >
-                Back to edit
+                {tc("backToEdit")}
               </button>
             </div>
           </div>

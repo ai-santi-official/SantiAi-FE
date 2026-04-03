@@ -7,23 +7,26 @@ import { useLiff } from "@/provider/LiffProvider";
 import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
 import { getGroupMeetings, type GroupMeeting } from "@/utils/getGroupMeetings";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 const DEV_GROUP_ID = "Cgroup_shared_001";
 
 type ProjectStatus = "draft" | "waiting_approval" | "approved" | "done";
 
 const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  draft:            { label: "Draft",            className: "bg-slate-100 text-slate-500" },
-  waiting_approval: { label: "Pending Approval", className: "bg-amber-100 text-amber-700" },
-  approved:         { label: "Approved",         className: "bg-green-100 text-green-700" },
-  done:             { label: "Done",             className: "bg-blue-100 text-blue-700" },
+  draft:            { label: "draft",            className: "bg-slate-100 text-slate-500" },
+  waiting_approval: { label: "pendingApproval",  className: "bg-amber-100 text-amber-700" },
+  approved:         { label: "approved",         className: "bg-green-100 text-green-700" },
+  done:             { label: "done",             className: "bg-blue-100 text-blue-700" },
 };
 
 function StatusBadge({ status }: { status: ProjectStatus }) {
+  const ts = useTranslations("status");
   const cfg = PROJECT_STATUS_CONFIG[status];
   return (
     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${cfg.className}`}>
-      {cfg.label}
+      {ts(cfg.label as any)}
     </span>
   );
 }
@@ -102,6 +105,9 @@ function projectRoute(project: GroupProject): string {
 
 export default function InfoEditPage() {
   const router = useRouter();
+  const t = useTranslations("infoEdit");
+  const tb = useTranslations("brand");
+  const tn = useTranslations("nav");
   const { groupId, isReady, profile } = useLiff();
   const lineGroupId = groupId ?? DEV_GROUP_ID;
   const [query, setQuery] = useState("");
@@ -168,10 +174,10 @@ export default function InfoEditPage() {
             </svg>
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-black">Santi</h1>
-            <p className="text-sm text-black/60 mt-0.5">Info / Edit</p>
+            <h1 className="text-3xl font-bold text-black">{tb("name")}</h1>
+            <p className="text-sm text-black/60 mt-0.5">{tn("infoEdit")}</p>
           </div>
-          <div className="w-8" />
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -184,7 +190,7 @@ export default function InfoEditPage() {
           <input
             type="text"
             className="flex-1 border-none bg-transparent p-0 text-base focus:ring-0 outline-none placeholder:text-santi-muted text-black"
-            placeholder="Search projects or meetings"
+            placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -192,9 +198,9 @@ export default function InfoEditPage() {
 
         {/* Active Projects */}
         <section className="flex flex-col gap-3">
-          <h3 className="text-lg font-bold">Projects</h3>
+          <h3 className="text-lg font-bold">{t("projects")}</h3>
           {activeProjects.length === 0 ? (
-            <p className="text-sm text-santi-muted text-center py-4">No active projects</p>
+            <p className="text-sm text-santi-muted text-center py-4">{t("noActiveProjects")}</p>
           ) : (
             <div className="flex flex-col gap-3">
               {activeProjects.map((project) => (
@@ -208,9 +214,9 @@ export default function InfoEditPage() {
                       <FolderIcon />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-bold text-black truncate">{project.project_name || "Untitled Project"}</span>
+                      <span className="font-bold text-black truncate">{project.project_name || t("untitledProject")}</span>
                       {project.final_due_date && (
-                        <span className="text-xs text-santi-muted">Due {formatDisplayDate(project.final_due_date)}</span>
+                        <span className="text-xs text-santi-muted">{t("due")} {formatDisplayDate(project.final_due_date)}</span>
                       )}
                     </div>
                   </div>
@@ -228,7 +234,7 @@ export default function InfoEditPage() {
         {pastProjects.length > 0 && (
           <section className="flex flex-col gap-3">
             <SectionHeader
-              title="Past Projects"
+              title={t("pastProjects")}
               count={pastProjects.length}
               open={showPastProjects}
               onToggle={() => setShowPastProjects((v) => !v)}
@@ -246,9 +252,9 @@ export default function InfoEditPage() {
                         <FolderIcon faded />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-black truncate">{project.project_name || "Untitled Project"}</span>
+                        <span className="font-bold text-black truncate">{project.project_name || t("untitledProject")}</span>
                         {project.final_due_date && (
-                          <span className="text-xs text-santi-muted">Ended {formatDisplayDate(project.final_due_date)}</span>
+                          <span className="text-xs text-santi-muted">{t("ended")} {formatDisplayDate(project.final_due_date)}</span>
                         )}
                       </div>
                     </div>
@@ -265,9 +271,9 @@ export default function InfoEditPage() {
 
         {/* Upcoming Meetings */}
         <section className="flex flex-col gap-3">
-          <h3 className="text-lg font-bold">Meetings</h3>
+          <h3 className="text-lg font-bold">{t("meetings")}</h3>
           {upcomingMeetings.length === 0 ? (
-            <p className="text-sm text-santi-muted text-center py-4">No upcoming meetings</p>
+            <p className="text-sm text-santi-muted text-center py-4">{t("noUpcomingMeetings")}</p>
           ) : (
             <div className="flex flex-col gap-3">
               {upcomingMeetings.map((meeting) => (
@@ -300,7 +306,7 @@ export default function InfoEditPage() {
         {pastMeetings.length > 0 && (
           <section className="flex flex-col gap-3">
             <SectionHeader
-              title="Past Meetings"
+              title={t("pastMeetings")}
               count={pastMeetings.length}
               open={showPastMeetings}
               onToggle={() => setShowPastMeetings((v) => !v)}

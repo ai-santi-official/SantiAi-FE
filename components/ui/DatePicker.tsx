@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ITEM_H = 48; // px — height of one drum row
 
-const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+const MONTH_KEYS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function daysInMonth(year: number, month: number) {
@@ -119,7 +120,10 @@ type Props = {
   maxDate?: string; // ISO string — latest selectable date
 };
 
-export function DatePicker({ value, onChange, placeholder = "Select date & time", dateOnly = false, minDate, maxDate }: Props) {
+export function DatePicker({ value, onChange, placeholder, dateOnly = false, minDate, maxDate }: Props) {
+  const t = useTranslations("datePicker");
+  const tc = useTranslations("common");
+  const resolvedPlaceholder = placeholder ?? t(dateOnly ? "selectDate" : "selectDeadline");
   const now = new Date();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -212,7 +216,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
         className="w-full h-14 px-4 bg-white border border-santi-muted rounded-xl flex items-center justify-between text-base transition-colors focus:outline-none focus:border-santi-primary focus:ring-2 focus:ring-santi-primary/25"
       >
         <span className={value ? "text-black" : "text-santi-muted"}>
-          {value ? formatDisplay(value, dateOnly) : placeholder}
+          {value ? formatDisplay(value, dateOnly) : resolvedPlaceholder}
         </span>
         <span className="text-santi-primary"><CalendarIcon className="w-5 h-5" /></span>
       </button>
@@ -234,14 +238,14 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
             </div>
 
             <div className="px-6 pb-4">
-              <h3 className="text-xl font-bold text-black">{dateOnly ? "Select Date" : "Select Deadline"}</h3>
+              <h3 className="text-xl font-bold text-black">{t(dateOnly ? "selectDate" : "selectDeadline")}</h3>
             </div>
 
             {/* ── Calendar ── */}
             <div className="px-6 py-2">
               <div className="flex items-center justify-between mb-4">
                 <p className="font-bold text-lg text-black">
-                  {MONTH_NAMES[displayMonth]} {displayYear}
+                  {t(`months.${MONTH_KEYS[displayMonth]}`)} {displayYear}
                 </p>
                 <div className="flex gap-3">
                   <button onClick={prevMonth} disabled={isCurrentMonth} className="p-1 disabled:opacity-30 disabled:cursor-not-allowed text-slate-400"><ChevronLeftIcon className="w-[22px] h-[22px]" /></button>
@@ -250,8 +254,8 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
               </div>
 
               <div className="grid grid-cols-7 text-center mb-2">
-                {DAY_LABELS.map((l, i) => (
-                  <span key={i} className="text-slate-400 text-xs font-semibold py-1">{l}</span>
+                {DAY_KEYS.map((key) => (
+                  <span key={key} className="text-slate-400 text-xs font-semibold py-1">{t(`daysShort.${key}`)}</span>
                 ))}
               </div>
 
@@ -290,7 +294,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
             {!dateOnly && (
               <div className="px-6 py-6 border-t border-slate-100 mt-4">
                 <p className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-4">
-                  Deadline Time
+                  {t("deadlineTime")}
                 </p>
 
                 <div className="flex items-center justify-center gap-2 bg-slate-50 py-4 rounded-2xl">
@@ -308,13 +312,13 @@ export function DatePicker({ value, onChange, placeholder = "Select date & time"
                 disabled={!selectedDay}
                 className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Confirm
+                {tc("confirm")}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="w-full text-black font-bold py-3 text-base"
               >
-                Cancel
+                {tc("cancel")}
               </button>
             </div>
           </div>

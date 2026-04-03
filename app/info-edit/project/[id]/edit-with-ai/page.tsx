@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { SparklesIcon } from "@/components/icons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { apiFetch } from "@/utils/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -30,19 +32,12 @@ function CloseIcon() {
   );
 }
 
-// ─── Quick-action chips ──────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  "Extend deadlines",
-  "Add a meeting",
-  "Change assignee",
-  "Summarize plan",
-];
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function ActiveEditWithAiPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
+  const t = useTranslations("editWithAi");
 
   const [projectName, setProjectName] = useState("");
   const [projectDeadline, setProjectDeadline] = useState("");
@@ -75,11 +70,10 @@ export default function ActiveEditWithAiPage() {
       {
         id: "greeting",
         role: "assistant",
-        content:
-          "Hi! I'm ready to help you refine your plan. What would you like to change? I can adjust deadlines, add tasks, or reassign members.",
+        content: t("greeting"),
       },
     ]);
-  }, [projectId]);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -111,7 +105,7 @@ export default function ActiveEditWithAiPage() {
       const reasoning =
         data.plan_version?.snapshot?.ai_reasoning ??
         data.plan_version?.snapshot?.plan_rationale ??
-        "Done! I've updated the plan based on your request. Tap \"View full plan\" to see the changes.";
+        t("defaultResponse");
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -123,7 +117,7 @@ export default function ActiveEditWithAiPage() {
       const errMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content: "Sorry, something went wrong. Please try again.",
+        content: t("errorMessage"),
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
@@ -139,13 +133,16 @@ export default function ActiveEditWithAiPage() {
     }
   };
 
+  const chipKeys = ["chipExtendDeadlines", "chipAddMeeting", "chipChangeAssignee", "chipSummarizePlan"] as const;
+
   return (
     <div className="flex flex-col h-dvh bg-white">
       {/* Header */}
       <header className="flex items-center px-4 py-3 border-b border-slate-100 shrink-0">
         <div className="flex-1 ml-1">
-          <h2 className="text-lg font-bold text-black">Edit with AI</h2>
+          <h2 className="text-lg font-bold text-black">{t("title")}</h2>
         </div>
+        <LanguageSwitcher />
         <button
           onClick={() => router.push("/info-edit")}
           aria-label="Close"
@@ -160,13 +157,12 @@ export default function ActiveEditWithAiPage() {
         {messages.map((msg) =>
           msg.role === "assistant" ? (
             <div key={msg.id} className="flex items-start gap-2.5">
-              {/* Santi avatar */}
               <div className="w-8 h-8 rounded-full bg-santi-secondary flex items-center justify-center shrink-0 border border-santi-primary/20">
                 <SparklesIcon className="w-4 h-4 text-santi-primary" />
               </div>
               <div className="flex flex-col gap-1 items-start max-w-[80%]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted ml-1">
-                  Santi
+                  {t("santi")}
                 </p>
                 <div className="text-sm leading-relaxed rounded-2xl rounded-tl-none px-3.5 py-2.5 bg-santi-secondary text-black/80">
                   {msg.content}
@@ -182,7 +178,7 @@ export default function ActiveEditWithAiPage() {
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    View in calendar
+                    {t("viewFullPlan")}
                   </button>
                 )}
               </div>
@@ -191,7 +187,7 @@ export default function ActiveEditWithAiPage() {
             <div key={msg.id} className="flex items-start gap-2.5 justify-end">
               <div className="flex flex-col gap-1 items-end max-w-[80%]">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted mr-1">
-                  You
+                  {t("you")}
                 </p>
                 <div className="text-sm leading-relaxed rounded-2xl rounded-tr-none px-3.5 py-2.5 bg-slate-100 text-black/80 border border-slate-200">
                   {msg.content}
@@ -209,10 +205,9 @@ export default function ActiveEditWithAiPage() {
             </div>
             <div className="flex flex-col gap-1 items-start">
               <p className="text-[10px] font-bold uppercase tracking-wider text-santi-muted ml-1">
-                Santi
+                {t("santi")}
               </p>
               <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-santi-secondary">
-                <p className="text-xs text-black/50 mb-1.5">Cooking up your plan...</p>
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 bg-black/30 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -227,14 +222,14 @@ export default function ActiveEditWithAiPage() {
       {/* Quick action chips */}
       <div className="px-4 pb-2 shrink-0 overflow-x-auto">
         <div className="flex gap-2 w-max">
-          {QUICK_ACTIONS.map((action) => (
+          {chipKeys.map((key) => (
             <button
-              key={action}
-              onClick={() => { setInput(action); inputRef.current?.focus(); }}
+              key={key}
+              onClick={() => { setInput(t(key)); inputRef.current?.focus(); }}
               disabled={sending}
               className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-black/60 active:border-santi-primary active:text-black transition-all disabled:opacity-40"
             >
-              {action}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -252,7 +247,7 @@ export default function ActiveEditWithAiPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Tell Santi what to change..."
+            placeholder={t("inputPlaceholder")}
             disabled={sending}
             className="flex-1 bg-transparent border-none focus:outline-none text-sm py-2 text-black placeholder:text-santi-muted"
           />

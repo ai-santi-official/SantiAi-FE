@@ -10,7 +10,6 @@ import {
   type PlanMember,
 } from "@/utils/getPlanProposal";
 import {
-  BellIcon,
   SparklesIcon,
   CalendarDotIcon,
   ChevronDownIcon,
@@ -27,19 +26,22 @@ import VersionHistorySheet, { type PlanVersionSummary } from "@/components/onboa
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { apiFetch } from "@/utils/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  todo:  { label: "To Do",  className: "bg-blue-100 text-blue-600" },
-  doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
-  done:  { label: "Done",   className: "bg-green-100 text-green-700" },
+const STATUS_KEYS: Record<string, { key: string; className: string }> = {
+  todo:  { key: "todo",  className: "bg-blue-100 text-blue-600" },
+  doing: { key: "doing",  className: "bg-santi-primary/20 text-black/70" },
+  done:  { key: "done",   className: "bg-green-100 text-green-700" },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.todo;
+  const t = useTranslations("status");
+  const cfg = STATUS_KEYS[status] ?? STATUS_KEYS.todo;
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.className}`}>
-      {cfg.label}
+      {t(cfg.key as any)}
     </span>
   );
 }
@@ -173,6 +175,7 @@ function buildCalendarCells(
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[] }) {
+  const tc = useTranslations("common");
   const memberMap = new Map(members.map((m) => [m.user_id, m]));
   return (
     <div className="flex flex-wrap gap-2 mt-2">
@@ -183,11 +186,11 @@ function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={m?.picture_url ?? "/default-avatar.png"}
-              alt={m?.display_name ?? "Member"}
+              alt={m?.display_name ?? tc("member")}
               className="w-5 h-5 rounded-full object-cover bg-slate-100 shrink-0"
             />
             <span className="text-xs text-black/70 font-medium">
-              {m?.display_name ?? "Unknown"}
+              {m?.display_name ?? tc("unknown")}
             </span>
           </div>
         );
@@ -197,10 +200,10 @@ function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const MONTH_KEYS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+] as const;
 
 type EditingItem =
   | { type: "task"; id: string }
@@ -236,6 +239,12 @@ export default function PlanProposalPage() {
 }
 
 function PlanProposalContent() {
+  const t = useTranslations("planProposal");
+  const tc = useTranslations("common");
+  const td = useTranslations("confirmDialog");
+  const tl = useTranslations("loading");
+  const tb = useTranslations("brand");
+  const tdp = useTranslations("datePicker");
   const router = useRouter();
   const searchParams = useSearchParams();
   const isViewMode = searchParams.get("mode") === "view";
@@ -507,31 +516,31 @@ function PlanProposalContent() {
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
                   <SparklesIcon className="w-7 h-7 text-santi-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-black">No Plan Yet</h3>
+                <h3 className="text-xl font-bold text-black">{t("noPlanTitle")}</h3>
               </div>
               <div className="px-6 pt-4 pb-6 text-center">
                 <p className="text-sm text-black/60 leading-relaxed mb-6">
-                  This project doesn&apos;t have a plan yet. Fill in the project details and let Santi AI generate one for you.
+                  {t("noPlanMessage")}
                 </p>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => router.push(`/onboarding/project-detail?project_id=${projectId}`)}
                     className="w-full py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
                   >
-                    Set Up Project
+                    {t("setUp")}
                   </button>
                   <button
                     onClick={() => router.back()}
                     className="w-full py-3.5 rounded-santi border-2 border-slate-200 font-bold text-sm text-black/60 bg-white active:bg-slate-50 transition-colors"
                   >
-                    Go Back
+                    {tc("goBack")}
                   </button>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <LoadingSpinner variant="inline" message="Loading plan..." />
+          <LoadingSpinner variant="inline" message={tl("plan")} />
         )}
       </div>
     );
@@ -617,12 +626,9 @@ function PlanProposalContent() {
             <ChevronLeftIcon className="w-6 h-6" />
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-black">Project Plan</h1>
+            <h1 className="text-lg font-bold text-black">{t("projectPlan")}</h1>
           </div>
-          <button className="relative w-10 h-10 flex items-center justify-center rounded-full">
-            <BellIcon className="w-6 h-6 text-black" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full" />
-          </button>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -634,7 +640,7 @@ function PlanProposalContent() {
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-black truncate">{project.name}</h2>
               <p className="text-sm text-santi-muted mt-0.5">
-                Deadline: {formatShortDate(project.deadline)}
+                {t("deadline")} {formatShortDate(project.deadline)}
               </p>
             </div>
             {isPreviewMode ? (
@@ -642,14 +648,14 @@ function PlanProposalContent() {
                 onClick={() => setShowVersionHistory(true)}
                 className="text-xs font-semibold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full shrink-0 active:bg-amber-200 transition-colors"
               >
-                Previewing v{previewVersion.version_number}
+                {t("previewingVersion", { version: previewVersion.version_number })}
               </button>
             ) : (
               <button
                 onClick={() => setShowVersionHistory(true)}
                 className="text-xs font-semibold bg-santi-primary/20 text-black/60 px-2.5 py-1 rounded-full shrink-0 active:bg-santi-primary/30 transition-colors"
               >
-                v{plan_version.version} · History
+                v{plan_version.version} · {t("history")}
               </button>
             )}
           </div>
@@ -662,7 +668,7 @@ function PlanProposalContent() {
                 className="w-5 h-5 rounded-full object-cover bg-slate-100"
               />
               <span className="text-xs text-black/60">
-                Changed by <span className="font-semibold text-black/80">{previewVersion.created_by.line_display_name ?? "Unknown"}</span>
+                {t("changedBy")} <span className="font-semibold text-black/80">{previewVersion.created_by.line_display_name ?? tc("unknown")}</span>
               </span>
             </div>
           )}
@@ -680,7 +686,7 @@ function PlanProposalContent() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-bold text-black">
-              {MONTH_NAMES[calDisplayMonth]} {calDisplayYear}
+              {tdp(MONTH_KEYS[calDisplayMonth])} {calDisplayYear}
             </h3>
             <div className="flex gap-1">
               <button
@@ -1078,11 +1084,11 @@ function PlanProposalContent() {
                 Edit with AI
               </button>
               <button
-                onClick={() => isViewMode ? router.back() : handlePublish()}
+                onClick={handlePublish}
                 disabled={publishing}
                 className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all disabled:opacity-60"
               >
-                {isViewMode ? "Close" : publishing ? "Publishing..." : "Publish"}
+                {publishing ? "Publishing..." : "Publish"}
               </button>
             </>
           )}

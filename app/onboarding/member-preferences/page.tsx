@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { OnboardingHeader } from "@/components/onboarding/OnboardingHeader";
 import { OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
@@ -10,16 +11,19 @@ import { useLiff } from "@/provider/LiffProvider";
 import { apiFetch } from "@/utils/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
-const PLAN_STAGE_MESSAGES = [
-  "Saving preferences...",
-  "Generating your plan...",
-  "Santi is thinking...",
-  "Organizing tasks and meetings...",
-  "Almost there...",
-];
+const PLAN_STAGE_KEYS = [
+  "savingPreferences",
+  "generatingPlan",
+  "santiThinking",
+  "organizingTasks",
+  "almostThere",
+] as const;
 
 export default function MemberPreferencesPage() {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const tc = useTranslations("common");
+  const tl = useTranslations("loading");
   const { groupId, isReady } = useLiff();
   const { projectId, memberIds } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -47,7 +51,7 @@ export default function MemberPreferencesPage() {
   const startStageTimer = () => {
     setStageIndex(0);
     stageTimer.current = setInterval(() => {
-      setStageIndex((prev) => Math.min(prev + 1, PLAN_STAGE_MESSAGES.length - 1));
+      setStageIndex((prev) => Math.min(prev + 1, PLAN_STAGE_KEYS.length - 1));
     }, 4000);
   };
 
@@ -100,9 +104,9 @@ export default function MemberPreferencesPage() {
 
       <main className="relative -mt-12 bg-white rounded-t-[48px] pt-8 px-6 pb-6">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-black mb-1">Describe members</h2>
+          <h2 className="text-2xl font-bold text-black mb-1">{t("describeMembers")}</h2>
           <p className="text-sm text-santi-muted">
-            (optional) This helps Santi assign tasks more accurately.
+            {t("describeMembersHint")}
           </p>
         </div>
 
@@ -116,16 +120,16 @@ export default function MemberPreferencesPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={member.picture_url ?? "/default-avatar.png"}
-                  alt={member.display_name ?? "Member"}
+                  alt={member.display_name ?? tc("member")}
                   className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0"
                 />
                 <span className="font-bold text-black">
-                  {member.display_name ?? "Unknown"}
+                  {member.display_name ?? tc("unknown")}
                 </span>
               </div>
               <textarea
                 className="w-full bg-slate-50 border-0 rounded-xl text-sm p-3 focus:outline-none focus:ring-2 focus:ring-santi-primary/50 resize-none h-20 placeholder:text-slate-400 font-sans"
-                placeholder="Good at design, research, presentation..."
+                placeholder={t("memberDescPlaceholder")}
                 value={descriptions[member.user_id] ?? ""}
                 onChange={(e) => handleChange(member.user_id, e.target.value)}
               />
@@ -134,9 +138,9 @@ export default function MemberPreferencesPage() {
         </div>
       </main>
 
-      <OnboardingFooter onContinue={handleCreatePlan} label={submitting ? "Creating..." : "Create Plan"} disabled={submitting} />
+      <OnboardingFooter onContinue={handleCreatePlan} label={submitting ? tl("creating") : t("createPlan")} disabled={submitting} />
 
-      {submitting && <LoadingSpinner variant="overlay" message={PLAN_STAGE_MESSAGES[stageIndex]} />}
+      {submitting && <LoadingSpinner variant="overlay" message={tl(PLAN_STAGE_KEYS[stageIndex])} />}
     </>
   );
 }

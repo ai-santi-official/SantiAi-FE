@@ -1,3 +1,7 @@
+"use client";
+
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
 type Props = {
   title: string;
   step: number;
@@ -29,7 +33,7 @@ export function MeetingHeader({ title, step, totalSteps, onBack }: Props) {
           </svg>
         </button>
         <h1 className="text-lg font-bold text-black">{title}</h1>
-        <div className="w-8" />
+        <LanguageSwitcher />
       </div>
 
       <div className="flex justify-center items-center gap-2">

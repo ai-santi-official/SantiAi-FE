@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { PlanTask, PlanMember } from "@/utils/getPlanProposal";
 import { DatePicker } from "@/components/ui/DatePicker";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -17,10 +18,10 @@ type Props = {
   onClose: () => void;
 };
 
-const STATUS_OPTIONS: { label: string; value: PlanTask["status"] }[] = [
-  { label: "To Do",  value: "todo"  },
-  { label: "Doing",  value: "doing" },
-  { label: "Done",   value: "done"  },
+const STATUS_KEYS: { key: "todo" | "doing" | "done"; value: PlanTask["status"] }[] = [
+  { key: "todo",  value: "todo"  },
+  { key: "doing", value: "doing" },
+  { key: "done",  value: "done"  },
 ];
 
 // Convert date string to ISO string for DatePicker, or return ""
@@ -34,6 +35,10 @@ function dateToIso(d: string): string {
 const isCreate = (task: PlanTask) => !task.title && !task.start_date && !task.end_date;
 
 export default function EditTaskSheet({ task, members, showStatus = false, minDate, maxDate, onSave, onClose }: Props) {
+  const t = useTranslations("editTask");
+  const tc = useTranslations("common");
+  const ts = useTranslations("status");
+  const td = useTranslations("confirmDialog");
   const [title, setTitle]           = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [startDate, setStartDate]   = useState(task.start_date);
@@ -83,25 +88,25 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
         <div className="absolute inset-0 bg-black/40" onClick={handleCancelClick} />
         <div className="relative bg-white rounded-t-3xl px-6 pt-5 pb-10 space-y-4 max-h-[85dvh] overflow-y-auto">
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-2" />
-          <h2 className="text-base font-bold text-black">{creating ? "Create Task" : "Edit Task"}</h2>
+          <h2 className="text-base font-bold text-black">{creating ? t("createTask") : t("editTask")}</h2>
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-black/60 mb-1 block">Title</label>
+              <label className="text-xs font-semibold text-black/60 mb-1 block">{t("title")}</label>
               <input
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary"
-                placeholder="e.g. Research competitors"
+                placeholder={t("titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-black/60 mb-1 block">Description</label>
+              <label className="text-xs font-semibold text-black/60 mb-1 block">{t("description")}</label>
               <textarea
                 className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-santi-primary resize-none"
                 rows={3}
-                placeholder="What needs to be done?"
+                placeholder={t("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -109,22 +114,22 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
 
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">Start Date</label>
+                <label className="text-xs font-semibold text-black/60 mb-1 block">{t("startDate")}</label>
                 <DatePicker
                   value={dateToIso(startDate)}
                   onChange={(iso) => setStartDate(iso)}
-                  placeholder="Select start"
+                  placeholder={t("selectStart")}
                   dateOnly
                   minDate={minDate}
                   maxDate={maxDate}
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs font-semibold text-black/60 mb-1 block">End Date</label>
+                <label className="text-xs font-semibold text-black/60 mb-1 block">{t("endDate")}</label>
                 <DatePicker
                   value={dateToIso(endDate)}
                   onChange={(iso) => setEndDate(iso)}
-                  placeholder="Select end"
+                  placeholder={t("selectEnd")}
                   dateOnly
                   minDate={minDate}
                   maxDate={maxDate}
@@ -134,9 +139,9 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
 
             {showStatus && (
               <div>
-                <label className="text-xs font-semibold text-black/60 mb-2 block">Status</label>
+                <label className="text-xs font-semibold text-black/60 mb-2 block">{t("status")}</label>
                 <div className="flex gap-2">
-                  {STATUS_OPTIONS.map((opt) => (
+                  {STATUS_KEYS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setStatus(opt.value)}
@@ -146,7 +151,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
                           : "border border-slate-200 text-black/60"
                       }`}
                     >
-                      {opt.label}
+                      {ts(opt.key)}
                     </button>
                   ))}
                 </div>
@@ -154,7 +159,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
             )}
 
             <div>
-              <label className="text-xs font-semibold text-black/60 mb-2 block">Assignees</label>
+              <label className="text-xs font-semibold text-black/60 mb-2 block">{t("assignees")}</label>
               <div className="space-y-2">
                 {members.map((m) => (
                   <label key={m.user_id} className="flex items-center gap-3 cursor-pointer">
@@ -170,7 +175,7 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
                       alt={m.display_name ?? "Member"}
                       className="w-6 h-6 rounded-full object-cover bg-slate-100"
                     />
-                    <span className="text-sm text-black/80">{m.display_name ?? "Unknown"}</span>
+                    <span className="text-sm text-black/80">{m.display_name ?? tc("unknown")}</span>
                   </label>
                 ))}
               </div>
@@ -182,14 +187,14 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
               onClick={handleCancelClick}
               className="flex-1 py-3 rounded-santi border-2 border-slate-200 text-sm font-bold text-black/60"
             >
-              Cancel
+              {tc("cancel")}
             </button>
             <button
               onClick={handleSaveClick}
               disabled={!canSave}
               className="flex-1 py-3 rounded-santi bg-santi-primary text-sm font-bold text-black disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {creating ? "Create" : "Save"}
+              {creating ? tc("create") : tc("save")}
             </button>
           </div>
         </div>
@@ -197,10 +202,10 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
 
       {confirm === "discard" && (
         <ConfirmDialog
-          title="Discard changes?"
-          message="You have unsaved changes. Are you sure you want to discard them?"
-          confirmLabel="Discard"
-          cancelLabel="Keep editing"
+          title={td("discardChanges")}
+          message={td("unsavedDiscard")}
+          confirmLabel={tc("discard")}
+          cancelLabel={tc("keepEditing")}
           confirmClassName="bg-red-500 text-white"
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
@@ -208,10 +213,10 @@ export default function EditTaskSheet({ task, members, showStatus = false, minDa
       )}
       {confirm === "save" && (
         <ConfirmDialog
-          title={creating ? "Create task?" : "Save changes?"}
-          message={creating ? "Are you sure you want to create this task?" : "Are you sure you want to save the changes to this task?"}
-          confirmLabel={creating ? "Create" : "Save"}
-          cancelLabel="Keep editing"
+          title={creating ? td("createTaskTitle") : td("saveChanges")}
+          message={creating ? td("createTaskMessage") : td("saveTaskConfirm")}
+          confirmLabel={creating ? tc("create") : tc("save")}
+          cancelLabel={tc("keepEditing")}
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
         />

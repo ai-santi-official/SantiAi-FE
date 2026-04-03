@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { apiFetch } from "@/utils/api";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -33,10 +34,10 @@ type Props = {
   revertAction?: string;
 };
 
-const CHANGE_TYPE_LABELS: Record<string, string> = {
-  ai_proposal: "AI Proposal",
-  ai_reprompt: "AI Reprompt",
-  manual_edit: "Manual Edit",
+const CHANGE_TYPE_KEYS: Record<string, string> = {
+  ai_proposal: "aiProposal",
+  ai_reprompt: "aiReprompt",
+  manual_edit: "manualEdit",
 };
 
 function formatDateTime(iso: string) {
@@ -50,6 +51,9 @@ function formatDateTime(iso: string) {
 }
 
 export default function VersionHistorySheet({ projectId, currentVersionNumber, onPreview, onRevert, onClose, revertAction = "revert" }: Props) {
+  const t = useTranslations("versionHistory");
+  const tc = useTranslations("common");
+  const td = useTranslations("confirmDialog");
   const [versions, setVersions] = useState<PlanVersionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [revertTarget, setRevertTarget] = useState<PlanVersionSummary | null>(null);
@@ -93,12 +97,12 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
         <div className="absolute inset-0 bg-black/40" onClick={onClose} />
         <div className="relative bg-white rounded-t-3xl px-6 pt-5 pb-10 max-h-[70dvh] overflow-y-auto">
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-2" />
-          <h2 className="text-base font-bold text-black mb-4">Version History</h2>
+          <h2 className="text-base font-bold text-black mb-4">{t("title")}</h2>
 
           {loading ? (
-            <LoadingSpinner variant="inline" message="Loading versions..." />
+            <LoadingSpinner variant="inline" message={t("title")} />
           ) : versions.length === 0 ? (
-            <p className="text-sm text-black/60 text-center py-8">No versions found</p>
+            <p className="text-sm text-black/60 text-center py-8">{t("noVersions")}</p>
           ) : (
             <div className="space-y-2">
               {visibleVersions.map((v) => {
@@ -120,11 +124,11 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-black">v{v.version_number}</span>
                           <span className="text-xs text-black/50">
-                            {CHANGE_TYPE_LABELS[v.change_type] ?? v.change_type}
+                            {CHANGE_TYPE_KEYS[v.change_type] ? t(CHANGE_TYPE_KEYS[v.change_type] as any) : v.change_type}
                           </span>
                           {isCurrent && (
                             <span className="text-[10px] font-semibold bg-santi-primary px-1.5 py-0.5 rounded-full text-black">
-                              Current
+                              {t("current")}
                             </span>
                           )}
                         </div>
@@ -140,12 +144,12 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
                                 className="w-4 h-4 rounded-full object-cover bg-slate-100"
                               />
                               <span className="text-xs text-black/50">
-                                {v.created_by.line_display_name ?? "Unknown"}
+                                {v.created_by.line_display_name ?? tc("unknown")}
                               </span>
                             </>
                           ) : (
                             <span className="text-xs text-black/50">
-                              {v.change_type === "ai_proposal" || v.change_type === "ai_reprompt" ? "Santi AI" : "Unknown"}
+                              {v.change_type === "ai_proposal" || v.change_type === "ai_reprompt" ? t("santiAi") : tc("unknown")}
                             </span>
                           )}
                           <span className="text-xs text-black/30">·</span>
@@ -163,7 +167,7 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
                           onClick={(e) => { e.stopPropagation(); setRevertTarget(v); }}
                           className="text-xs font-semibold text-santi-primary border border-santi-primary px-3 py-1.5 rounded-full shrink-0 active:bg-santi-secondary/30 transition-colors ml-2"
                         >
-                          Revert
+                          {tc("revert")}
                         </button>
                       )}
                     </div>
@@ -186,17 +190,17 @@ export default function VersionHistorySheet({ projectId, currentVersionNumber, o
             onClick={onClose}
             className="w-full mt-4 py-3 rounded-santi border-2 border-slate-200 text-sm font-bold text-black/60"
           >
-            Close
+            {tc("close")}
           </button>
         </div>
       </div>
 
       {revertTarget && (
         <ConfirmDialog
-          title={`Revert to v${revertTarget.version_number}?`}
-          message="This will create a new version with the snapshot from the selected version. Your current changes will still be available in the history."
-          confirmLabel={reverting ? "Reverting..." : "Revert"}
-          cancelLabel="Cancel"
+          title={td("revertToVersion", { version: revertTarget.version_number })}
+          message={td("revertMessage")}
+          confirmLabel={reverting ? tc("revert") + "..." : tc("revert")}
+          cancelLabel={tc("cancel")}
           onConfirm={handleRevert}
           onCancel={() => setRevertTarget(null)}
         />

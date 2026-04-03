@@ -10,6 +10,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
+import { useTranslations } from "next-intl";
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -32,6 +33,10 @@ function CheckIcon({ className }: { className?: string }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const tc = useTranslations("common");
+  const td = useTranslations("confirmDialog");
+  const tl = useTranslations("loading");
   const { profile, groupId, isReady } = useLiff();
   const { memberIds, projectId, projectDetail, setMemberIds, setProjectId } = useOnboarding();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -131,8 +136,8 @@ export default function OnboardingPage() {
 
       <main className="px-6 pb-6 space-y-3 relative -mt-12 bg-white rounded-t-[48px] pt-8">
         <section className="mb-6">
-          <h2 className="text-xl font-bold text-black">Create a new project</h2>
-          <p className="text-sm text-black/60">Select members</p>
+          <h2 className="text-xl font-bold text-black">{t("createNewProject")}</h2>
+          <p className="text-sm text-black/60">{t("selectMembers")}</p>
         </section>
 
         {/* Select All */}
@@ -149,7 +154,7 @@ export default function OnboardingPage() {
               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-santi-muted/30">
                 <CheckIcon className="h-5 w-5 text-santi-primary" />
               </div>
-              <span className="font-medium text-black">Select All</span>
+              <span className="font-medium text-black">{tc("selectAll")}</span>
             </div>
             {allSelected && (
               <div className="bg-santi-primary rounded-full p-1">
@@ -177,10 +182,10 @@ export default function OnboardingPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={member.picture_url ?? "/default-avatar.png"}
-                    alt={member.display_name ?? "Member"}
+                    alt={member.display_name ?? tc("member")}
                     className="w-10 h-10 rounded-full bg-gray-100 border border-santi-muted/20 object-cover"
                   />
-                  <span className="font-medium">{member.display_name ?? "Unknown"}</span>
+                  <span className="font-medium">{member.display_name ?? tc("unknown")}</span>
                 </div>
                 {selected && (
                   <div className="bg-santi-primary rounded-full p-1">
@@ -196,17 +201,17 @@ export default function OnboardingPage() {
       <OnboardingFooter
         onContinue={handleContinue}
         disabled={selectedIds.size === 0 || submitting}
-        label={submitting ? "Creating..." : "Continue"}
+        label={submitting ? tl("creating") : tc("continue")}
         withNav
       />
       <BottomNav />
 
       {showExitDialog && (
         <ConfirmDialog
-          title="Discard project?"
-          message="You have unsaved project details. Do you want to discard them or save as a draft?"
-          confirmLabel="Discard"
-          cancelLabel="Save draft"
+          title={td("discardProject")}
+          message={td("discardProjectMessage")}
+          confirmLabel={tc("discard")}
+          cancelLabel={td("saveDraft")}
           confirmClassName="bg-red-500 text-white"
           onConfirm={async () => {
             setShowExitDialog(false);

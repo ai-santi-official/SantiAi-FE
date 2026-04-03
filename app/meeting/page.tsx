@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useLiff } from "@/provider/LiffProvider";
 import { getGroupProjects, type GroupProject } from "@/utils/getGroupProjects";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useTranslations } from "next-intl";
 
 const DEV_GROUP_ID = "Cgroup_shared_001";
 
@@ -29,6 +30,8 @@ function CheckCircleIcon() {
 export default function MeetingSelectProjectPage() {
   const router = useRouter();
   const { groupId, isReady } = useLiff();
+  const t = useTranslations("meeting");
+  const tl = useTranslations("loading");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [projects, setProjects] = useState<GroupProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,7 @@ export default function MeetingSelectProjectPage() {
   return (
     <>
       <MeetingHeader
-        title="Create Meeting"
+        title={t("createMeeting")}
         step={1}
         totalSteps={2}
         onBack={() => router.back()}
@@ -60,15 +63,15 @@ export default function MeetingSelectProjectPage() {
 
       <main className="px-6 pb-6 space-y-3 relative -mt-12 bg-white rounded-t-[48px] pt-8">
         <section className="mb-6">
-          <h2 className="text-xl font-bold text-black">Select Project</h2>
+          <h2 className="text-xl font-bold text-black">{t("selectProject")}</h2>
         </section>
 
         <section className="flex flex-col gap-3">
           {loading && (
-            <LoadingSpinner variant="inline" message="Loading projects..." />
+            <LoadingSpinner variant="inline" message={tl("projects")} />
           )}
           {!loading && projects.length === 0 && (
-            <p className="text-center text-gray-400 py-8">No approved projects yet. Approve a project first to create a meeting.</p>
+            <p className="text-center text-gray-400 py-8">{t("noApprovedProjects")}</p>
           )}
           {projects.map((project) => {
             const selected = selectedId === project.project_id;
@@ -101,7 +104,7 @@ export default function MeetingSelectProjectPage() {
       <OnboardingFooter
         onContinue={handleNext}
         disabled={!selectedId}
-        label="Next Step"
+        label={t("nextStep")}
         withNav
       />
       <BottomNav />

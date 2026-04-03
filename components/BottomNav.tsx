@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 function SparklesIcon({ active }: { active: boolean }) {
   return (
@@ -32,14 +33,15 @@ function EditNavIcon({ active }: { active: boolean }) {
 }
 
 const NAV_ITEMS = [
-  { id: "smart-planner", label: "Smart Planner", href: "/onboarding", Icon: SparklesIcon },
-  { id: "meetings", label: "New Meeting", href: "/meeting", Icon: CalendarNavIcon },
-  { id: "info-edit", label: "Info / Edit", href: "/info-edit", Icon: EditNavIcon },
+  { id: "smart-planner", key: "smartPlanner" as const, href: "/onboarding", Icon: SparklesIcon },
+  { id: "meetings", key: "newMeeting" as const, href: "/meeting", Icon: CalendarNavIcon },
+  { id: "info-edit", key: "infoEdit" as const, href: "/info-edit", Icon: EditNavIcon },
 ] as const;
 
 export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   const activeId =
     pathname === "/onboarding" ? "smart-planner"
@@ -53,7 +55,7 @@ export function BottomNav() {
         className="flex justify-around items-center px-4 pt-3"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
       >
-        {NAV_ITEMS.map(({ id, label, href, Icon }) => {
+        {NAV_ITEMS.map(({ id, key, href, Icon }) => {
           const active = activeId === id;
           return (
             <button
@@ -63,7 +65,7 @@ export function BottomNav() {
             >
               <Icon active={active} />
               <span className={`text-[10px] uppercase tracking-wider ${active ? "font-bold" : "font-medium"}`}>
-                {label}
+                {t(key)}
               </span>
             </button>
           );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 const ITEM_H = 48;
 
@@ -85,6 +86,8 @@ type Props = {
 };
 
 export function TimeRangePicker({ value, onChange, onClose }: Props) {
+  const t = useTranslations("timeRangePicker");
+  const tc = useTranslations("common");
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -110,7 +113,7 @@ export function TimeRangePicker({ value, onChange, onClose }: Props) {
         </div>
 
         <div className="px-6 pb-2">
-          <h3 className="text-xl font-bold text-black">Select Time Range</h3>
+          <h3 className="text-xl font-bold text-black">{t("title")}</h3>
         </div>
 
         <div className="px-6 py-4">
@@ -130,13 +133,13 @@ export function TimeRangePicker({ value, onChange, onClose }: Props) {
             onClick={onClose}
             className="w-full bg-santi-primary py-4 rounded-santi font-bold text-lg text-black active:scale-[0.98] transition-transform"
           >
-            Confirm
+            {tc("confirm")}
           </button>
           <button
             onClick={onClose}
             className="w-full text-black font-bold py-3 text-base"
           >
-            Cancel
+            {tc("cancel")}
           </button>
         </div>
       </div>

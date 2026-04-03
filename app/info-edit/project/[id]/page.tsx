@@ -20,28 +20,31 @@ import {
   type ProjectTask, type ProjectMeeting,
 } from "@/utils/getProjectTasksAndMeetings";
 import type { PlanTask, PlanMeeting, PlanMember } from "@/utils/getPlanProposal";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // ─── Status Badge ──────────────────────────────────────────
 type ProjectStatus = "draft" | "waiting_approval" | "approved" | "done";
 
-const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  draft:            { label: "Draft",            className: "bg-slate-100 text-slate-500" },
-  waiting_approval: { label: "Pending Approval", className: "bg-amber-100 text-amber-700" },
-  approved:         { label: "Approved",         className: "bg-green-100 text-green-700" },
-  done:             { label: "Done",             className: "bg-blue-100 text-blue-700" },
+const PROJECT_STATUS_CONFIG: Record<ProjectStatus, { key: string; className: string }> = {
+  draft:            { key: "draft",            className: "bg-slate-100 text-slate-500" },
+  waiting_approval: { key: "pendingApproval",  className: "bg-amber-100 text-amber-700" },
+  approved:         { key: "approved",         className: "bg-green-100 text-green-700" },
+  done:             { key: "done",             className: "bg-blue-100 text-blue-700" },
 };
 
-const TASK_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  todo:  { label: "To Do",  className: "bg-blue-100 text-blue-600" },
-  doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
-  done:  { label: "Done",   className: "bg-green-100 text-green-700" },
+const TASK_STATUS_CONFIG: Record<string, { key: string; className: string }> = {
+  todo:  { key: "todo",  className: "bg-blue-100 text-blue-600" },
+  doing: { key: "doing",  className: "bg-santi-primary/20 text-black/70" },
+  done:  { key: "done",   className: "bg-green-100 text-green-700" },
 };
 
 function TaskStatusBadge({ status }: { status: string }) {
+  const ts = useTranslations("status");
   const cfg = TASK_STATUS_CONFIG[status] ?? TASK_STATUS_CONFIG.todo;
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.className}`}>
-      {cfg.label}
+      {ts(cfg.key)}
     </span>
   );
 }
@@ -79,10 +82,10 @@ function localDateStr(iso: string) {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
 }
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const MONTH_KEYS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+] as const;
 
 // ─── Convert BE types → PlanTask/PlanMeeting for EditSheets ──
 type ColoredTask = PlanTask & { color: string; _taskId: string };
@@ -179,7 +182,7 @@ function buildTimelineGroups(tasks: ColoredTask[], meetings: DisplayMeeting[]): 
     if (!map.has(key)) {
       map.set(key, {
         dateKey: key,
-        label: key === "no-date" ? "No date" : formatShortDate(key),
+        label: key === "no-date" ? "__NO_DATE__" : formatShortDate(key),
         tasks: [],
         meetings: [],
       });
@@ -206,6 +209,7 @@ function buildTimelineGroups(tasks: ColoredTask[], meetings: DisplayMeeting[]): 
 
 // ─── Assignee avatars ──────────────────────────────────────
 function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[] }) {
+  const tc = useTranslations("common");
   const memberMap = new Map(members.map((m) => [m.user_id, m]));
   return (
     <div className="flex flex-wrap gap-2 mt-2">
@@ -216,11 +220,11 @@ function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={m?.picture_url ?? "/default-avatar.png"}
-              alt={m?.display_name ?? "Member"}
+              alt={m?.display_name ?? tc("member")}
               className="w-5 h-5 rounded-full object-cover bg-slate-100 shrink-0"
             />
             <span className="text-xs text-black/70 font-medium">
-              {m?.display_name ?? "Unknown"}
+              {m?.display_name ?? tc("unknown")}
             </span>
           </div>
         );
@@ -284,6 +288,15 @@ function ProjectInfoEditContent({
   const searchParams = useSearchParams();
   const { id } = use(params);
   const { isReady, profile } = useLiff();
+  const t = useTranslations("infoEdit");
+  const tc = useTranslations("common");
+  const td = useTranslations("confirmDialog");
+  const tl = useTranslations("loading");
+  const tb = useTranslations("brand");
+  const tp = useTranslations("planProposal");
+  const tdp = useTranslations("datePicker");
+  const ts = useTranslations("status");
+  const te = useTranslations("errors");
 
   // ── Data state ──
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -495,6 +508,9 @@ function ProjectInfoEditContent({
   /** True if the current user may edit/delete this meeting (creator only). */
   const canEditMeeting = () => isCreator;
 
+  /** True if the current user is a member of this project. Non-members can only view. */
+  const isMember = !!currentUserId;
+
   // ── Save project metadata ──
   const origDeadline = project?.final_due_date ? project.final_due_date.slice(0, 10) : "";
   const isDirty = project ? (
@@ -539,15 +555,15 @@ function ProjectInfoEditContent({
 
   // ── Loading / Error ──
   if (loading) {
-    return <LoadingSpinner message="Loading project..." />;
+    return <LoadingSpinner message={tl("project")} />;
   }
 
   if (error || !project) {
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center gap-4 px-6">
-        <p className="text-santi-muted font-medium">{error ?? "Project not found."}</p>
+        <p className="text-santi-muted font-medium">{error ?? te("projectNotFound")}</p>
         <button onClick={() => router.back()} className="text-santi-primary font-semibold underline">
-          Go back
+          {tc("goBack")}
         </button>
       </div>
     );
@@ -602,22 +618,23 @@ function ProjectInfoEditContent({
       {/* Header */}
       <header className="bg-santi-secondary pt-10 pb-16 px-6">
         <div className="flex items-center justify-between">
-          <button onClick={handleBackClick} aria-label="Go back" className="p-1 text-black">
+          <button onClick={handleBackClick} aria-label={tc("goBack")} className="p-1 text-black">
             <BackArrowIcon />
           </button>
-          <h1 className="text-lg font-bold text-black">Project</h1>
+          <h1 className="text-lg font-bold text-black">{tb("name")}</h1>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <button
               onClick={() => setShowVersionHistory(true)}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/60 text-black text-xs font-semibold active:bg-white/80 transition-colors"
-              aria-label="Version history"
+              aria-label={tp("history")}
             >
               <HistoryIcon />
-              History
+              {tp("history")}
             </button>
             <button
               onClick={() => router.push("/info-edit")}
-              aria-label="Close"
+              aria-label={tc("close")}
               className="p-1.5 rounded-full bg-white/60 text-black active:bg-white/80 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -644,7 +661,7 @@ function ProjectInfoEditContent({
             <p className="font-bold text-black">{project.project_name}</p>
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${statusCfg.className}`}>
-                {statusCfg.label}
+                {ts(statusCfg.key)}
               </span>
               {(() => {
                 const creator = members.find((m) => m.user_id === project.created_by_user_id);
@@ -680,13 +697,14 @@ function ProjectInfoEditContent({
                 placeholder="e.g. Science Fair Presentation"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                readOnly={!isMember}
               />
             </div>
 
             {/* Deadline */}
             <div className="flex flex-col gap-2">
               <label className="santi-label">Project Deadline</label>
-              <DatePicker value={deadline} onChange={setDeadline} placeholder="Select date & time" />
+              <DatePicker value={deadline} onChange={isMember ? setDeadline : () => {}} placeholder="Select date & time" />
             </div>
 
             {/* Project Detail */}
@@ -701,6 +719,7 @@ function ProjectInfoEditContent({
                 placeholder="Describe your goals, team size, and any specific requirements..."
                 value={detail}
                 onChange={(e) => setDetail(e.target.value)}
+                readOnly={!isMember}
               />
             </div>
 
@@ -712,6 +731,7 @@ function ProjectInfoEditContent({
                 placeholder="e.g. Figma file, PDF report, Codebase"
                 value={deliverables}
                 onChange={(e) => setDeliverables(e.target.value)}
+                readOnly={!isMember}
               />
             </div>
           </div>
@@ -722,7 +742,7 @@ function ProjectInfoEditContent({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-black">
-                {MONTH_NAMES[calDisplayMonth]} {calDisplayYear}
+                {tdp(MONTH_KEYS[calDisplayMonth])} {calDisplayYear}
               </h3>
               <div className="flex gap-1">
                 <button onClick={prevCal} disabled={!canGoPrev} className="p-1.5 rounded-lg disabled:opacity-30 text-black/60 hover:bg-slate-100 transition-colors">
@@ -819,13 +839,17 @@ function ProjectInfoEditContent({
                           <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <div className="relative">
+                              {isMember ? (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id); }}
                                 className="rounded-full active:scale-95 transition-transform"
                               >
                                 <TaskStatusBadge status={task.status} />
                               </button>
-                              {statusDropdownId === task.id && (
+                              ) : (
+                                <TaskStatusBadge status={task.status} />
+                              )}
+                              {isMember && statusDropdownId === task.id && (
                                 <>
                                   <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setStatusDropdownId(null); }} />
                                   <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg border border-slate-100 py-1 min-w-[120px]">
@@ -951,18 +975,20 @@ function ProjectInfoEditContent({
             )}
 
             {/* Create Task */}
-            <button
-              onClick={() => setShowCreateTask(true)}
-              className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Create Task
-            </button>
+            {isMember && (
+              <button
+                onClick={() => setShowCreateTask(true)}
+                className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create Task
+              </button>
+            )}
           </section>
         )}
 
         {/* Create Task button when no tasks exist yet */}
-        {!hasTasks && (
+        {!hasTasks && isMember && (
           <button
             onClick={() => setShowCreateTask(true)}
             className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
@@ -979,8 +1005,8 @@ function ProjectInfoEditContent({
       {/* Fixed footer */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-santi-muted/10 z-30">
         <div className="max-w-md mx-auto">
-          {/* Save bar — only when dirty */}
-          {isDirty && (
+          {/* Save bar — only when dirty (members only) */}
+          {isMember && isDirty && (
             <div className="px-6 pt-3">
               <button
                 onClick={handleSaveClick}
@@ -995,15 +1021,17 @@ function ProjectInfoEditContent({
 
           {/* Edit with AI + Close */}
           <div className="flex gap-3 px-6 pt-3 pb-2">
-            <button
-              onClick={() => router.push(`/info-edit/project/${id}/edit-with-ai`)}
-              className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
-            >
-              Edit with AI
-            </button>
+            {isMember && (
+              <button
+                onClick={() => router.push(`/info-edit/project/${id}/edit-with-ai`)}
+                className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
+              >
+                Edit with AI
+              </button>
+            )}
             <button
               onClick={() => router.push("/info-edit")}
-              className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
+              className={`flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all`}
             >
               Close
             </button>

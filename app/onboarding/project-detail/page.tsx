@@ -10,6 +10,7 @@ import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getProject } from "@/utils/getProject";
+import { useTranslations } from "next-intl";
 
 export default function ProjectDetailPage() {
   return <Suspense><ProjectDetailContent /></Suspense>;
@@ -17,6 +18,10 @@ export default function ProjectDetailPage() {
 
 function ProjectDetailContent() {
   const router = useRouter();
+  const t = useTranslations("onboarding");
+  const tc = useTranslations("common");
+  const ts = useTranslations("safeguard");
+  const tl = useTranslations("loading");
   const searchParams = useSearchParams();
   const { projectId: ctxProjectId, projectDetail, setProjectDetail, setProjectId, safeguardPassed, setSafeguardPassed } = useOnboarding();
 
@@ -162,7 +167,7 @@ function ProjectDetailContent() {
     : [];
 
   if (prefilling) {
-    return <LoadingSpinner message="Loading project details..." />;
+    return <LoadingSpinner message={tl("projectDetails")} />;
   }
 
   return (
@@ -171,16 +176,16 @@ function ProjectDetailContent() {
 
       <main className="relative -mt-12 bg-white rounded-t-[48px] pt-8 px-6 pb-6 space-y-6">
         <section>
-          <h2 className="text-xl font-bold text-black">Create a new project</h2>
-          <p className="text-sm text-black/60">Fill in the details</p>
+          <h2 className="text-xl font-bold text-black">{t("createNewProject")}</h2>
+          <p className="text-sm text-black/60">{t("fillInDetails")}</p>
         </section>
 
         {/* Project Name */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Project Name</label>
+          <label className="santi-label">{t("projectName")}</label>
           <input
             className="santi-input"
-            placeholder="e.g. Science Fair Presentation"
+            placeholder={t("projectNamePlaceholder")}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

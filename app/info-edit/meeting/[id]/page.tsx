@@ -7,15 +7,17 @@ import { TimeRangePicker, type TimeRange } from "@/components/meeting/TimeRangeP
 import { ChevronRightIcon, TrashIcon } from "@/components/icons";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLiff } from "@/provider/LiffProvider";
 import { getMeeting, updateMeeting, type MeetingDetail } from "@/utils/getMeeting";
 import { getProjectMembers, deleteMeetingApi } from "@/utils/getProjectTasksAndMeetings";
 import { getProject } from "@/utils/getProject";
 
 const REPEAT_OPTIONS = [
-  { label: "None", value: "none" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Biweekly", value: "biweekly" },
+  { key: "none" as const, value: "none" },
+  { key: "weekly" as const, value: "weekly" },
+  { key: "biweekly" as const, value: "biweekly" },
 ] as const;
 
 function pad(n: number) {
@@ -72,10 +74,14 @@ export default function MeetingInfoEditPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
-  const { isReady } = useLiff();
+  const { isReady, profile } = useLiff();
+  const t = useTranslations("meeting");
+  const tc = useTranslations("common");
+  const td = useTranslations("confirmDialog");
+  const tl = useTranslations("loading");
 
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
-  const [members, setMembers] = useState<{ user_id: string; display_name: string | null; picture_url: string | null }[]>([]);
+  const [members, setMembers] = useState<{ user_id: string; display_name: string | null; picture_url: string | null; line_user_id: string }[]>([]);
   const [projectDeadline, setProjectDeadline] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -109,6 +115,7 @@ export default function MeetingInfoEditPage({
           user_id: m.user_id,
           display_name: m.display_name,
           picture_url: m.picture_url,
+          line_user_id: m.line_user_id ?? "",
         })));
 
         // Initialize form state from API data
@@ -137,19 +144,22 @@ export default function MeetingInfoEditPage({
   }, [isReady, id]);
 
   if (loading) {
-    return <LoadingSpinner message="Loading meeting..." />;
+    return <LoadingSpinner message={tl("meeting")} />;
   }
 
   if (error || !meeting) {
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center gap-4 px-6">
-        <p className="text-santi-muted font-medium">{error ?? "Meeting not found."}</p>
+        <p className="text-santi-muted font-medium">{error ?? t("notFound")}</p>
         <button onClick={() => router.back()} className="text-santi-primary font-semibold underline">
-          Go back
+          {tc("goBack")}
         </button>
       </div>
     );
   }
+
+  /** True if the current user is a member of this project. Non-members can only view. */
+  const isMember = !!members.find((m) => m.line_user_id === profile?.userId);
 
   const origMt = new Date(meeting.meeting_time);
   const origDate = `${origMt.getFullYear()}-${pad(origMt.getMonth() + 1)}-${pad(origMt.getDate())}`;
@@ -214,7 +224,7 @@ export default function MeetingInfoEditPage({
         setTimeout(() => setSaved(false), 2000);
       } catch (err) {
         console.error("Failed to save meeting:", err);
-        setError("Failed to save meeting. Please try again.");
+        setError(t("saveError"));
       } finally {
         setSaving(false);
       }
@@ -253,8 +263,8 @@ export default function MeetingInfoEditPage({
           <button onClick={handleBackClick} aria-label="Go back" className="p-1 text-black">
             <BackArrowIcon />
           </button>
-          <h1 className="text-lg font-bold text-black">Edit Meeting</h1>
-          <div className="w-8" />
+          <h1 className="text-lg font-bold text-black">{isMember ? t("editMeeting") : t("meetingLabel")}</h1>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -269,36 +279,37 @@ export default function MeetingInfoEditPage({
             </svg>
           </div>
           <div>
-            <p className="text-xs text-santi-muted font-semibold uppercase tracking-wider">Meeting</p>
+            <p className="text-xs text-santi-muted font-semibold uppercase tracking-wider">{t("meetingLabel")}</p>
             <p className="font-bold text-black">{meeting.meeting_title}</p>
           </div>
         </div>
 
         {/* Meeting Name */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Meeting Name</label>
+          <label className="santi-label">{t("meetingName")}</label>
           <input
             className="santi-input"
-            placeholder="e.g. Weekly Sync"
+            placeholder={t("meetingNamePlaceholder")}
             value={meetingName}
             onChange={(e) => setMeetingName(e.target.value)}
+            readOnly={!isMember}
           />
         </div>
 
         {/* Date & Time */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Date &amp; Time</label>
+          <label className="santi-label">{t("dateTime")}</label>
           <div className="space-y-3">
             <DatePicker
               value={date}
-              onChange={setDate}
-              placeholder="Select date"
+              onChange={isMember ? setDate : () => {}}
+              placeholder={t("selectDate")}
               dateOnly
               maxDate={projectDeadline || undefined}
             />
             <button
               type="button"
-              onClick={() => setShowTimePicker(true)}
+              onClick={() => isMember && setShowTimePicker(true)}
               className="w-full flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-left transition-colors focus:outline-none focus:border-santi-primary"
             >
               <ClockIcon className="w-5 h-5 text-santi-primary shrink-0" />
@@ -314,19 +325,20 @@ export default function MeetingInfoEditPage({
 
         {/* Repeat */}
         <div className="flex flex-col gap-2">
-          <label className="santi-label">Repeat</label>
+          <label className="santi-label">{t("repeat")}</label>
           <div className="flex gap-3">
             {REPEAT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => setRepeat(opt.value)}
+                onClick={() => isMember && setRepeat(opt.value)}
+                disabled={!isMember}
                 className={`py-2 px-5 rounded-full text-sm font-semibold transition-all ${
                   repeat === opt.value
                     ? "bg-santi-primary text-black"
                     : "border border-santi-muted text-black/60 hover:border-santi-primary"
                 }`}
               >
-                {opt.label}
+                {t(opt.key)}
               </button>
             ))}
           </div>
@@ -334,11 +346,12 @@ export default function MeetingInfoEditPage({
 
         {/* Attendees */}
         <div className="flex flex-col gap-3">
-          <label className="santi-label">Attendees</label>
+          <label className="santi-label">{t("attendees")}</label>
 
           {/* Select All */}
           <button
-            onClick={toggleSelectAll}
+            onClick={() => isMember && toggleSelectAll()}
+            disabled={!isMember}
             className={`member-card w-full flex items-center gap-3 p-3 rounded-santi border ${
               allSelected
                 ? "bg-santi-secondary border-2 border-santi-primary"
@@ -348,7 +361,7 @@ export default function MeetingInfoEditPage({
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
               <GroupIcon className="w-5 h-5 text-santi-muted" />
             </div>
-            <span className="flex-1 text-sm font-bold text-left">Select All</span>
+            <span className="flex-1 text-sm font-bold text-left">{tc("selectAll")}</span>
             {allSelected
               ? <CheckCircleIcon />
               : <div className="w-6 h-6 rounded-full border-2 border-santi-muted shrink-0" />
@@ -361,7 +374,8 @@ export default function MeetingInfoEditPage({
             return (
               <button
                 key={member.user_id}
-                onClick={() => toggleMember(member.user_id)}
+                onClick={() => isMember && toggleMember(member.user_id)}
+                disabled={!isMember}
                 className={`member-card w-full flex items-center gap-3 p-3 rounded-santi border ${
                   selected
                     ? "bg-santi-secondary border-2 border-santi-primary"
@@ -371,7 +385,7 @@ export default function MeetingInfoEditPage({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={member.picture_url ?? "/default-avatar.png"}
-                  alt={member.display_name ?? "Member"}
+                  alt={member.display_name ?? tc("member")}
                   className="w-10 h-10 rounded-full object-cover shrink-0 bg-slate-100"
                 />
                 <span className="flex-1 text-sm font-bold text-left">{member.display_name}</span>
@@ -383,14 +397,16 @@ export default function MeetingInfoEditPage({
             );
           })}
           {/* Delete Meeting */}
-          <button
-            onClick={handleDeleteClick}
-            disabled={deleting}
-            className="w-full py-3 rounded-santi border-2 border-red-200 text-sm font-bold text-red-500 active:bg-red-50 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-          >
-            <TrashIcon className="w-4 h-4" />
-            {deleting ? "Deleting..." : "Delete Meeting"}
-          </button>
+          {isMember && (
+            <button
+              onClick={handleDeleteClick}
+              disabled={deleting}
+              className="w-full py-3 rounded-santi border-2 border-red-200 text-sm font-bold text-red-500 active:bg-red-50 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              <TrashIcon className="w-4 h-4" />
+              {deleting ? `${tc("delete")}...` : tc("delete")}
+            </button>
+          )}
         </div>
       </main>
 
@@ -402,18 +418,20 @@ export default function MeetingInfoEditPage({
         <div className="max-w-md mx-auto flex gap-3">
           <button
             onClick={() => router.back()}
-            className="flex-1 bg-white py-3.5 rounded-santi font-bold text-sm text-black border-2 border-slate-200 active:bg-slate-50 transition-colors"
+            className={`${isMember ? "flex-1" : "w-full"} bg-white py-3.5 rounded-santi font-bold text-sm text-black border-2 border-slate-200 active:bg-slate-50 transition-colors`}
           >
-            Close
+            {tc("close")}
           </button>
-          <button
-            onClick={handleSaveClick}
-            disabled={!canSave || !isDirty}
-            className="flex-1 bg-santi-primary py-3.5 rounded-santi font-bold text-sm text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <SaveIcon />
-            {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
-          </button>
+          {isMember && (
+            <button
+              onClick={handleSaveClick}
+              disabled={!canSave || !isDirty}
+              className="flex-1 bg-santi-primary py-3.5 rounded-santi font-bold text-sm text-black active:scale-[0.98] transition-transform btn-elevation disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <SaveIcon />
+              {saving ? tl("saving") : saved ? tl("saved") : tc("saveChanges")}
+            </button>
+          )}
         </div>
       </footer>
 
@@ -428,10 +446,10 @@ export default function MeetingInfoEditPage({
 
       {confirm === "discard" && (
         <ConfirmDialog
-          title="Discard changes?"
-          message="You have unsaved changes. Are you sure you want to leave without saving?"
-          confirmLabel="Discard"
-          cancelLabel="Keep editing"
+          title={td("discardChanges")}
+          message={td("unsavedLeave")}
+          confirmLabel={tc("discard")}
+          cancelLabel={tc("keepEditing")}
           confirmClassName="bg-red-500 text-white"
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
@@ -439,20 +457,20 @@ export default function MeetingInfoEditPage({
       )}
       {confirm === "save" && (
         <ConfirmDialog
-          title="Save changes?"
-          message="Are you sure you want to save the changes to this meeting?"
-          confirmLabel="Save"
-          cancelLabel="Keep editing"
+          title={td("saveChanges")}
+          message={td("saveMeetingConfirm")}
+          confirmLabel={tc("save")}
+          cancelLabel={tc("keepEditing")}
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
         />
       )}
       {deleteConfirm === "ask" && (
         <ConfirmDialog
-          title="Delete meeting?"
-          message="This meeting will be permanently removed. This action cannot be undone."
-          confirmLabel={deleting ? "Deleting..." : "Delete"}
-          cancelLabel="Cancel"
+          title={td("deleteMeeting")}
+          message={td("deleteMeetingPermanent")}
+          confirmLabel={deleting ? `${tc("delete")}...` : tc("delete")}
+          cancelLabel={tc("cancel")}
           confirmClassName="bg-red-500 text-white"
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteConfirm(null)}
@@ -462,28 +480,28 @@ export default function MeetingInfoEditPage({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteConfirm(null)} />
           <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-sm w-full shadow-xl space-y-3">
-            <h3 className="text-base font-bold text-black text-center">Delete recurring meeting?</h3>
-            <p className="text-sm text-black/60 text-center">This is a recurring meeting. Would you like to delete only this occurrence or all occurrences?</p>
+            <h3 className="text-base font-bold text-black text-center">{td("deleteMeeting")}</h3>
+            <p className="text-sm text-black/60 text-center">{td("deleteMeetingPermanent")}</p>
             <div className="space-y-2 pt-2">
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
                 className="w-full py-3 rounded-santi bg-red-500 text-white font-bold text-sm active:bg-red-600 transition-colors disabled:opacity-40"
               >
-                {deleting ? "Deleting..." : "Delete this meeting only"}
+                {deleting ? `${tc("delete")}...` : tc("delete")}
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
                 className="w-full py-3 rounded-santi border-2 border-red-200 text-red-500 font-bold text-sm active:bg-red-50 transition-colors disabled:opacity-40"
               >
-                {deleting ? "Deleting..." : "Delete all occurrences"}
+                {deleting ? `${tc("delete")}...` : tc("delete")}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="w-full py-3 rounded-santi text-black/60 font-bold text-sm active:bg-slate-50 transition-colors"
               >
-                Cancel
+                {tc("cancel")}
               </button>
             </div>
           </div>
@@ -495,7 +513,7 @@ export default function MeetingInfoEditPage({
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-3xl p-6 mx-6 max-w-[200px] w-full shadow-xl flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-3 border-santi-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-black">Saving...</p>
+            <p className="text-sm font-semibold text-black">{tl("saving")}</p>
           </div>
         </div>
       )}

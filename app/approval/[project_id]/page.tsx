@@ -10,7 +10,6 @@ import {
   type PlanMember,
 } from "@/utils/getPlanProposal";
 import {
-  BellIcon,
   SparklesIcon,
   CalendarDotIcon,
   ChevronDownIcon,
@@ -21,6 +20,8 @@ import {
 import { useLiff } from "@/provider/LiffProvider";
 import { apiFetch } from "@/utils/api";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
 const TASK_COLORS = [
@@ -161,22 +162,24 @@ function buildCalendarCells(
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  todo:  { label: "To Do",  className: "bg-blue-100 text-blue-600" },
-  doing: { label: "Doing",  className: "bg-santi-primary/20 text-black/70" },
-  done:  { label: "Done",   className: "bg-green-100 text-green-700" },
+const STATUS_KEYS: Record<string, { key: string; className: string }> = {
+  todo:  { key: "todo",  className: "bg-blue-100 text-blue-600" },
+  doing: { key: "doing", className: "bg-santi-primary/20 text-black/70" },
+  done:  { key: "done",  className: "bg-green-100 text-green-700" },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.todo;
+  const ts = useTranslations("status");
+  const cfg = STATUS_KEYS[status] ?? STATUS_KEYS.todo;
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.className}`}>
-      {cfg.label}
+      {ts(cfg.key as any)}
     </span>
   );
 }
 
 function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[] }) {
+  const tc = useTranslations("common");
   const memberMap = new Map(members.map((m) => [m.user_id, m]));
   return (
     <div className="flex flex-wrap gap-2 mt-2">
@@ -187,11 +190,11 @@ function AssigneeAvatars({ ids, members }: { ids: string[]; members: PlanMember[
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={m?.picture_url ?? "/default-avatar.png"}
-              alt={m?.display_name ?? "Member"}
+              alt={m?.display_name ?? tc("member")}
               className="w-5 h-5 rounded-full object-cover bg-slate-100 shrink-0"
             />
             <span className="text-xs text-black/70 font-medium">
-              {m?.display_name ?? "Unknown"}
+              {m?.display_name ?? tc("unknown")}
             </span>
           </div>
         );
@@ -213,16 +216,22 @@ function PendingDot() {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const MONTH_KEYS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+] as const;
 
 export default function ApprovalPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.project_id as string;
   const { profile, isReady } = useLiff();
+  const t = useTranslations("approval");
+  const tc = useTranslations("common");
+  const tl = useTranslations("loading");
+  const tp = useTranslations("planProposal");
+  const tdp = useTranslations("datePicker");
+  const ti = useTranslations("infoEdit");
 
   const [data, setData] = useState<PlanProposalResponse | null>(null);
   const [tasks, setTasks] = useState<ColoredTask[]>([]);
@@ -262,7 +271,7 @@ export default function ApprovalPage() {
       }
     }).catch((err) => {
       console.error("Failed to load plan:", err);
-      setLoadError("Failed to load plan. Please try again.");
+      setLoadError("loadError");
     });
 
     // Fetch approval statuses
@@ -310,17 +319,17 @@ export default function ApprovalPage() {
     if (loadError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-dvh bg-santi-secondary gap-3">
-          <p className="text-sm text-black/60">{loadError}</p>
+          <p className="text-sm text-black/60">{t("loadError")}</p>
           <button
             onClick={() => { setLoadError(null); window.location.reload(); }}
             className="px-4 py-2 bg-santi-primary rounded-xl text-sm font-bold"
           >
-            Retry
+            {tc("retry")}
           </button>
         </div>
       );
     }
-    return <LoadingSpinner message="Loading plan..." />;
+    return <LoadingSpinner message={tl("plan")} />;
   }
 
   const { project, plan_version } = data;
@@ -369,6 +378,8 @@ export default function ApprovalPage() {
   const currentUserApproval = approvals.find((a) => a.line_user_id === profile?.userId);
   const hasApproved = currentUserApproval?.approval_status === "approved";
   const allApproved = approvedCount === totalMembers && totalMembers > 0;
+  /** Non-members (not in approvals list) cannot approve. */
+  const isMember = !!currentUserApproval;
 
   return (
     <>
@@ -377,12 +388,9 @@ export default function ApprovalPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-black">Santi</h1>
-            <p className="text-sm text-black/60 mt-0.5">Project Approval</p>
+            <p className="text-sm text-black/60 mt-0.5">{t("projectApproval")}</p>
           </div>
-          <button className="relative w-10 h-10 flex items-center justify-center rounded-full">
-            <BellIcon className="w-6 h-6 text-black" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full" />
-          </button>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -391,8 +399,8 @@ export default function ApprovalPage() {
         {/* Project Summary Card */}
         <section className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
           <div className="min-w-0 mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-santi-muted">Project Summary</span>
-            <h2 className="text-lg font-bold text-black mt-1">{project.name || "Untitled Project"}</h2>
+            <span className="text-xs font-bold uppercase tracking-wider text-santi-muted">{t("projectSummary")}</span>
+            <h2 className="text-lg font-bold text-black mt-1">{project.name || ti("untitledProject")}</h2>
             <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-santi-primary/10 text-sm font-semibold">
               Due: {formatShortDate(project.deadline)}
             </div>
@@ -409,7 +417,7 @@ export default function ApprovalPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-bold text-black">
-              {MONTH_NAMES[calDisplayMonth]} {calDisplayYear}
+              {tdp(`months.${MONTH_KEYS[calDisplayMonth]}`)} {calDisplayYear}
             </h3>
             <div className="flex gap-1">
               <button
@@ -430,8 +438,8 @@ export default function ApprovalPage() {
           </div>
 
           <div className="grid grid-cols-7 mb-1">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <div key={d} className="text-center text-xs font-medium text-santi-muted py-1">{d}</div>
+            {(["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const).map((d) => (
+              <div key={d} className="text-center text-xs font-medium text-santi-muted py-1">{tdp(`daysMedium.${d}`)}</div>
             ))}
           </div>
 
@@ -478,7 +486,7 @@ export default function ApprovalPage() {
 
         {/* Timeline */}
         <section className="space-y-5">
-          <h3 className="text-base font-bold text-black">Task Timeline</h3>
+          <h3 className="text-base font-bold text-black">{tp("taskTimeline")}</h3>
 
           {timelineGroups.map((group) => (
             <div
@@ -574,7 +582,7 @@ export default function ApprovalPage() {
            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
         {/* Approval Progress */}
         <p className="text-sm font-bold text-black mb-3">
-          {approvedCount}/{totalMembers} have approved
+          {approvedCount}/{totalMembers} {t("haveApproved")}
         </p>
 
         {/* Member approval list */}
@@ -585,10 +593,10 @@ export default function ApprovalPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={member.picture_url ?? "/default-avatar.png"}
-                  alt={member.line_display_name ?? "Member"}
+                  alt={member.line_display_name ?? tc("member")}
                   className="w-8 h-8 rounded-full object-cover bg-slate-100"
                 />
-                <span className="text-sm font-medium text-black">{member.line_display_name ?? "Unknown"}</span>
+                <span className="text-sm font-medium text-black">{member.line_display_name ?? tc("unknown")}</span>
               </div>
               {member.approval_status === "approved" ? <CheckIcon /> : <PendingDot />}
             </div>
@@ -601,7 +609,14 @@ export default function ApprovalPage() {
             onClick={() => router.push(`/info-edit/project/${projectId}`)}
             className="w-full py-4 rounded-2xl font-bold text-lg transition-all bg-green-100 text-green-700 active:brightness-95"
           >
-            View Active Project
+            {t("viewActiveProject")}
+          </button>
+        ) : !isMember ? (
+          <button
+            disabled
+            className="w-full py-4 rounded-2xl font-bold text-lg bg-slate-100 text-slate-400 cursor-default"
+          >
+            You are not a member of this project
           </button>
         ) : (
           <button
@@ -613,7 +628,7 @@ export default function ApprovalPage() {
                 : "bg-santi-primary text-black active:brightness-95 disabled:opacity-50"
             }`}
           >
-            {hasApproved ? "You have approved" : submitting ? "Approving..." : "Approve"}
+            {hasApproved ? t("youHaveApproved") : submitting ? tl("approving") : t("approve")}
           </button>
         )}
       </div>
@@ -628,13 +643,13 @@ export default function ApprovalPage() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-black">Project Approved!</h3>
+            <h3 className="text-lg font-bold text-black">{t("projectApproval")}!</h3>
             <p className="text-sm text-black/60">All members have approved the plan. The project is now active.</p>
             <button
               onClick={() => { setShowApprovedModal(false); router.push("/info-edit"); }}
               className="w-full py-3 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
             >
-              Done
+              {tc("ok")}
             </button>
           </div>
         </div>
