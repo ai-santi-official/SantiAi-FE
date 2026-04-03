@@ -981,7 +981,7 @@ function ProjectInfoEditContent({
                 className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
               >
                 <PlusIcon className="w-4 h-4" />
-                Create Task
+                {tp("createTask")}
               </button>
             )}
           </section>
@@ -1014,7 +1014,7 @@ function ProjectInfoEditContent({
                 className="w-full bg-santi-primary py-3 rounded-santi font-bold text-sm text-black active:scale-[0.98] transition-transform disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SaveIcon />
-                {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+                {saving ? tl("saving") : saved ? tl("saved") : tc("saveChanges")}
               </button>
             </div>
           )}
@@ -1026,14 +1026,14 @@ function ProjectInfoEditContent({
                 onClick={() => router.push(`/info-edit/project/${id}/edit-with-ai`)}
                 className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
               >
-                Edit with AI
+                {tp("editWithAi")}
               </button>
             )}
             <button
               onClick={() => router.push("/info-edit")}
               className={`flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all`}
             >
-              Close
+              {tc("close")}
             </button>
           </div>
 

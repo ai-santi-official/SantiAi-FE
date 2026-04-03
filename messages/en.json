@@ -86,7 +86,9 @@
   "safeguard": {
     "title": "Wait a moment!",
     "message": "It looks like some details are still missing. Having these will help Santi plan better for you.",
-    "useTemplate": "Use template for project details"
+    "useTemplate": "Use template for project details",
+    "proceedAnyway": "Proceed anyway",
+    "addDetails": "Add details"
   },
   "planProposal": {
     "projectPlan": "Project Plan",
@@ -98,6 +100,7 @@
     "publish": "Publish",
     "revertToVersion": "Revert to this version",
     "showLess": "Show less",
+    "viewMore": "View {count} more",
     "noPlanTitle": "No Plan Yet",
     "noPlanMessage": "This project doesn't have a plan yet. Fill in the project details and let Santi AI generate one for you.",
     "setUp": "Set Up Project",

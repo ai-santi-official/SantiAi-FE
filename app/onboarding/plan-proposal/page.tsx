@@ -925,7 +925,7 @@ function PlanProposalContent() {
               onClick={() => setShowAll((v) => !v)}
               className="w-full py-3 rounded-2xl border-2 border-slate-200 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors"
             >
-              {showAll ? "Show less" : `View ${hiddenCount} more card${hiddenCount > 1 ? "s" : ""}`}
+              {showAll ? t("showLess") : t("viewMore", { count: hiddenCount })}
             </button>
           )}
 
@@ -936,7 +936,7 @@ function PlanProposalContent() {
               className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
             >
               <PlusIcon className="w-4 h-4" />
-              Create Task
+              {t("createTask")}
             </button>
           )}
         </section>
@@ -1034,11 +1034,11 @@ function PlanProposalContent() {
               <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
                 <SparklesIcon className="w-7 h-7 text-santi-primary" />
               </div>
-              <h3 className="text-xl font-bold text-black">Plan Published!</h3>
+              <h3 className="text-xl font-bold text-black">{t("publishedTitle")}</h3>
             </div>
             <div className="px-6 pt-4 pb-6 text-center">
               <p className="text-sm text-black/60 leading-relaxed mb-6">
-                The approval link has been sent to your LINE group. Members can now review and approve the plan.
+                {t("publishedMessage")}
               </p>
               <button
                 onClick={() => {
@@ -1047,7 +1047,7 @@ function PlanProposalContent() {
                 }}
                 className="w-full py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
               >
-                OK
+                {tc("ok")}
               </button>
             </div>
           </div>
@@ -1064,14 +1064,14 @@ function PlanProposalContent() {
                 onClick={exitPreview}
                 className="flex-1 py-3.5 rounded-santi border-2 border-slate-200 font-bold text-sm text-black/60 bg-white active:bg-slate-50 transition-colors"
               >
-                Back
+                {tc("back")}
               </button>
               {!isCurrentPreview && (
                 <button
                   onClick={() => setRevertTarget(previewVersion)}
                   className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all"
                 >
-                  Revert to this version
+                  {t("revertToVersion")}
                 </button>
               )}
             </>
@@ -1081,14 +1081,14 @@ function PlanProposalContent() {
                 onClick={() => router.push(`/onboarding/edit-with-ai?project_id=${projectId}`)}
                 className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
               >
-                Edit with AI
+                {t("editWithAi")}
               </button>
               <button
                 onClick={handlePublish}
                 disabled={publishing}
                 className="flex-1 py-3.5 rounded-santi bg-santi-primary font-bold text-sm text-black active:brightness-95 transition-all disabled:opacity-60"
               >
-                {publishing ? "Publishing..." : "Publish"}
+                {publishing ? tl("publishing") : t("publish")}
               </button>
             </>
           )}

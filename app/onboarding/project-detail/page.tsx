@@ -233,7 +233,7 @@ function ProjectDetailContent() {
 
       <OnboardingFooter onContinue={handleContinue} disabled={!canContinue || submitting} label={submitting ? "Checking..." : "Continue"} />
 
-      {submitting && <LoadingSpinner variant="overlay" message="Checking your project..." />}
+      {submitting && <LoadingSpinner variant="overlay" message={tl("checkingProject")} />}
 
       {safeguardReason && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -245,13 +245,13 @@ function ProjectDetailContent() {
               <div className="flex-shrink-0 bg-white p-2 rounded-full flex items-center justify-center">
                 <WarningIcon className="w-7 h-7 text-santi-primary" />
               </div>
-              <h2 className="text-black text-2xl font-bold leading-tight">Wait a moment!</h2>
+              <h2 className="text-black text-2xl font-bold leading-tight">{ts("title")}</h2>
             </div>
 
             {/* Content */}
             <div className="p-6">
               <p className="text-black/60 text-base leading-relaxed mb-6">
-                It looks like some details are still missing. Having these will help Santi plan better for you.
+                {ts("message")}
               </p>
 
               {/* Bullet list */}
@@ -270,7 +270,7 @@ function ProjectDetailContent() {
                 className="w-full px-4 py-3.5 rounded-xl border-2 border-dashed border-santi-primary bg-santi-primary/10 text-black text-sm font-bold mb-3 flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4 text-santi-primary" />
-                Use template for project details
+                {ts("useTemplate")}
               </button>
 
               {/* Buttons */}
@@ -279,13 +279,13 @@ function ProjectDetailContent() {
                   onClick={handleProceedAnyway}
                   className="flex-1 px-4 py-3.5 rounded-xl border-2 border-santi-muted text-black/60 text-sm font-bold"
                 >
-                  Proceed anyway
+                  {ts("proceedAnyway")}
                 </button>
                 <button
                   onClick={() => setSafeguardReason(null)}
                   className="flex-1 px-4 py-3.5 rounded-xl bg-santi-primary text-black text-sm font-bold"
                 >
-                  Add details
+                  {ts("addDetails")}
                 </button>
               </div>
             </div>
