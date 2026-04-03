@@ -85,27 +85,29 @@ function MeetingDetailsContent() {
   const [submitting, setSubmitting] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [projectDueDate, setProjectDueDate] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isReady || !projectId) return;
 
-    getProjectMembers(projectId)
-      .then((res) =>
-        setMembers(
-          res.map((m) => ({
-            line_user_id: (m as any).line_user_id ?? "",
-            display_name: m.display_name ?? "Unknown",
-            picture_url: m.picture_url,
-          }))
-        )
-      )
-      .catch((err) => console.error("Failed to load members:", err));
-
-    getProject(projectId)
-      .then((project) => {
-        if (project.final_due_date) setProjectDueDate(project.final_due_date);
-      })
-      .catch((err) => console.error("Failed to load project:", err));
+    Promise.all([
+      getProjectMembers(projectId)
+        .then((res) =>
+          setMembers(
+            res.map((m) => ({
+              line_user_id: (m as any).line_user_id ?? "",
+              display_name: m.display_name ?? "Unknown",
+              picture_url: m.picture_url,
+            }))
+          )
+        ),
+      getProject(projectId)
+        .then((project) => {
+          if (project.final_due_date) setProjectDueDate(project.final_due_date);
+        }),
+    ])
+      .catch((err) => console.error("Failed to load data:", err))
+      .finally(() => setLoading(false));
   }, [isReady, projectId]);
   const allSelected = members.length > 0 && selectedIds.size === members.length;
 
@@ -123,6 +125,10 @@ function MeetingDetailsContent() {
   const canSubmit = meetingName.trim() !== "" && date !== "" && selectedIds.size > 0;
   const selectedMembers = members.filter((m) => selectedIds.has(m.line_user_id));
   const extraCount = Math.max(0, selectedIds.size - 3);
+
+  if (loading) {
+    return <LoadingSpinner message={tl("meeting")} />;
+  }
 
   return (
     <>

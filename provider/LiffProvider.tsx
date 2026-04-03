@@ -190,6 +190,18 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
       });
   }, []);
 
+  if (!state.isReady) {
+    return (
+      <LiffContext.Provider value={state}>
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[100]">
+          <h1 className="text-4xl font-bold text-black mb-1">Santi</h1>
+          <p className="text-sm text-santi-muted mb-8">Project Management Assistant</p>
+          <div className="w-10 h-10 border-4 border-santi-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </LiffContext.Provider>
+    );
+  }
+
   return <LiffContext.Provider value={state}>{children}</LiffContext.Provider>;
 }
 

@@ -29,6 +29,7 @@ export default function MemberPreferencesPage() {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [stageIndex, setStageIndex] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -41,8 +42,13 @@ export default function MemberPreferencesPage() {
         : all;
       setMembers(selected);
       setDescriptions(Object.fromEntries(selected.map((m) => [m.user_id, ""])));
-    });
+    })
+    .finally(() => setLoading(false));
   }, [isReady, groupId, memberIds]);
+
+  if (loading) {
+    return <LoadingSpinner message={tl("members")} />;
+  }
 
   const handleChange = (id: string, value: string) => {
     setDescriptions((prev) => ({ ...prev, [id]: value }));

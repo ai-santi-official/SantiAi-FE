@@ -52,6 +52,10 @@ export default function MeetingSelectProjectPage() {
     router.push(`/meeting/details?projectId=${selectedId}&projectName=${encodeURIComponent(projectName)}`);
   };
 
+  if (loading) {
+    return <LoadingSpinner message={tl("projects")} />;
+  }
+
   return (
     <>
       <MeetingHeader

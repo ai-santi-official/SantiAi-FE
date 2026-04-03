@@ -9,6 +9,7 @@ import { getGroupMeetings, type GroupMeeting } from "@/utils/getGroupMeetings";
 import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const DEV_GROUP_ID = "Cgroup_shared_001";
 
@@ -108,6 +109,7 @@ export default function InfoEditPage() {
   const t = useTranslations("infoEdit");
   const tb = useTranslations("brand");
   const tn = useTranslations("nav");
+  const tl = useTranslations("loading");
   const { groupId, isReady, profile } = useLiff();
   const lineGroupId = groupId ?? DEV_GROUP_ID;
   const [query, setQuery] = useState("");
@@ -162,6 +164,10 @@ export default function InfoEditPage() {
       m.meeting_title.toLowerCase().includes(query.toLowerCase()))
       .sort((a, b) => b.meeting_time.localeCompare(a.meeting_time)),
     [meetings, query]);
+
+  if (loading) {
+    return <LoadingSpinner message={tl("projects")} />;
+  }
 
   return (
     <div className="flex flex-col min-h-dvh bg-white">

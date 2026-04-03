@@ -11,6 +11,7 @@ import { getGroupMembers, type GroupMember } from "@/utils/getGroupMembers";
 import { useOnboarding } from "@/provider/OnboardingProvider";
 import { apiFetch } from "@/utils/api";
 import { useTranslations } from "next-intl";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -43,6 +44,7 @@ export default function OnboardingPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(memberIds));
   const [submitting, setSubmitting] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const hasProjectDetails =
     projectDetail.name.trim() !== "" ||
@@ -62,8 +64,13 @@ export default function OnboardingPage() {
     if (!isReady) return;
     getGroupMembers(groupId ?? "Cgroup_shared_001")
       .then(({ members }) => setMembers(members))
-      .catch((err) => console.error("Failed to load members:", err));
+      .catch((err) => console.error("Failed to load members:", err))
+      .finally(() => setLoading(false));
   }, [isReady, groupId]);
+
+  if (loading) {
+    return <LoadingSpinner message={tl("members")} />;
+  }
 
   const allSelected =
     members.length > 0 && selectedIds.size === members.length;

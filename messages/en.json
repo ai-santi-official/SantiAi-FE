@@ -62,7 +62,8 @@
     "almostThere": "Almost there...",
     "publishing": "Publishing...",
     "approving": "Approving...",
-    "reverting": "Reverting..."
+    "reverting": "Reverting...",
+    "members": "Loading members..."
   },
   "onboarding": {
     "createNewProject": "Create a new project",

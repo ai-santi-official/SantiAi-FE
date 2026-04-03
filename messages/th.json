@@ -62,7 +62,8 @@
     "almostThere": "ใกล้เสร็จแล้ว...",
     "publishing": "กำลังเผยแพร่...",
     "approving": "กำลังอนุมัติ...",
-    "reverting": "กำลังย้อนกลับ..."
+    "reverting": "กำลังย้อนกลับ...",
+    "members": "กำลังโหลดสมาชิก..."
   },
   "onboarding": {
     "createNewProject": "สร้างโปรเจกต์ใหม่",
