@@ -26,6 +26,7 @@ export async function updateProject(
     final_due_date?: string;
     final_deliverable?: string;
     project_detail?: string;
+    project_status?: 'done';
   }
 ): Promise<ProjectDetail> {
   const res = await apiFetch(`/api/v1/projects/${projectId}`, {

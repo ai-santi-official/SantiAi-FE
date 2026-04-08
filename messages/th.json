@@ -97,6 +97,7 @@
     "taskTimeline": "ไทม์ไลน์งาน",
     "createTask": "เพิ่มงาน",
     "editWithAi": "แก้ไขด้วย AI",
+    "closeProject": "ปิดโปรเจกต์",
     "publish": "เผยแพร่",
     "revertToVersion": "ย้อนกลับไปเวอร์ชันนี้",
     "showLess": "แสดงน้อยลง",
@@ -201,8 +202,29 @@
     "discardProject": "ไม่บันทึกโปรเจกต์นี้ใช่ไหม?",
     "discardProjectMessage": "คุณมีรายละเอียดโปรเจกต์ที่ยังไม่ได้บันทึก ต้องการไม่บันทึกหรือบันทึกเป็นฉบับร่าง?",
     "saveDraft": "บันทึกเป็นฉบับร่าง",
+    "deleteProject": "ลบโปรเจกต์นี้ใช่ไหม?",
+    "deleteProjectMessage": "โปรเจกต์ฉบับร่างนี้จะถูกลบถาวร และไม่สามารถกู้คืนได้",
     "revertToVersion": "ย้อนกลับไป v{version} ใช่ไหม?",
-    "revertMessage": "ระบบจะสร้างเวอร์ชันใหม่จากข้อมูลของเวอร์ชันที่เลือกไว้ โดยการเปลี่ยนแปลงปัจจุบันของคุณจะยังอยู่ในประวัติ"
+    "revertMessage": "ระบบจะสร้างเวอร์ชันใหม่จากข้อมูลของเวอร์ชันที่เลือกไว้ โดยการเปลี่ยนแปลงปัจจุบันของคุณจะยังอยู่ในประวัติ",
+    "closeProject": "ปิดโปรเจกต์นี้ใช่ไหม?",
+    "closeProjectMessage": "โปรเจกต์จะถูกทำเครื่องหมายว่าเสร็จสมบูรณ์ และจะส่งสรุปผลไปยังกลุ่มแชท ไม่สามารถย้อนกลับได้"
+  },
+  "recap": {
+    "projectComplete": "โปรเจกต์เสร็จสมบูรณ์!",
+    "tasksDone": "ทำเสร็จ {done}/{total} งาน",
+    "meetingsHeld": "{count} การประชุม",
+    "daysTotal": "{count} วัน",
+    "awards": "รางวัล",
+    "speedStar": "Speed Star",
+    "mvp": "MVP",
+    "onTimeKing": "On-Time King",
+    "earlyBird": "Early Bird",
+    "workhorse": "Workhorse",
+    "avgDaysPerTask": "เฉลี่ย {value} วัน/งาน",
+    "tasksCompleted": "ทำเสร็จ {value} งาน",
+    "onTimeRate": "ส่งงานตรงเวลา {value}",
+    "tasksEarly": "ทำเสร็จก่อนกำหนด {value} งาน",
+    "tasksAssigned": "ได้รับมอบหมาย {value} งาน"
   },
   "versionHistory": {
     "title": "ประวัติเวอร์ชัน",

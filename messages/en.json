@@ -97,6 +97,7 @@
     "taskTimeline": "Task Timeline",
     "createTask": "Create Task",
     "editWithAi": "Edit with AI",
+    "closeProject": "Close Project",
     "publish": "Publish",
     "revertToVersion": "Revert to this version",
     "showLess": "Show less",
@@ -201,8 +202,29 @@
     "discardProject": "Discard project?",
     "discardProjectMessage": "You have unsaved project details. Do you want to discard them or save as a draft?",
     "saveDraft": "Save draft",
+    "deleteProject": "Delete this project?",
+    "deleteProjectMessage": "This draft project will be permanently deleted. This action cannot be undone.",
     "revertToVersion": "Revert to v{version}?",
-    "revertMessage": "This will create a new version with the snapshot from the selected version. Your current changes will still be available in the history."
+    "revertMessage": "This will create a new version with the snapshot from the selected version. Your current changes will still be available in the history.",
+    "closeProject": "Close this project?",
+    "closeProjectMessage": "This will mark the project as complete and send a recap to the group chat. This action cannot be undone."
+  },
+  "recap": {
+    "projectComplete": "Project Complete!",
+    "tasksDone": "{done}/{total} tasks done",
+    "meetingsHeld": "{count} meetings held",
+    "daysTotal": "{count} days",
+    "awards": "Awards",
+    "speedStar": "Speed Star",
+    "mvp": "MVP",
+    "onTimeKing": "On-Time King",
+    "earlyBird": "Early Bird",
+    "workhorse": "Workhorse",
+    "avgDaysPerTask": "Avg {value} days/task",
+    "tasksCompleted": "{value} tasks completed",
+    "onTimeRate": "{value} on-time delivery",
+    "tasksEarly": "{value} tasks finished early",
+    "tasksAssigned": "{value} tasks assigned"
   },
   "versionHistory": {
     "title": "Version History",

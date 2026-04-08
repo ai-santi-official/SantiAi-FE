@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiff } from "@/provider/LiffProvider";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -301,6 +301,7 @@ function ProjectInfoEditContent({
   // ── Data state ──
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [tasks, setTasks] = useState<ColoredTask[]>([]);
+  const [rawTaskData, setRawTaskData] = useState<ProjectTask[]>([]);
   const [meetings, setMeetings] = useState<DisplayMeeting[]>([]);
   const [members, setMembers] = useState<PlanMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,7 +314,9 @@ function ProjectInfoEditContent({
   const [deliverables, setDeliverables] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [confirm, setConfirm] = useState<"discard" | "save" | null>(null);
+  const [confirm, setConfirm] = useState<"discard" | "save" | "delete" | "close" | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // ── UI state ──
   const [showDetails, setShowDetails] = useState(false);
@@ -348,6 +351,7 @@ function ProjectInfoEditContent({
 
         const coloredTasks = rawTasks.map((t, i) => beTaskToPlan(t, i));
         setTasks(coloredTasks);
+        setRawTaskData(rawTasks);
         setMeetings(rawMeetings.map(beMeetingToPlan));
         setMembers(mems);
 
@@ -511,6 +515,93 @@ function ProjectInfoEditContent({
   /** True if the current user is a member of this project. Non-members can only view. */
   const isMember = !!currentUserId;
 
+  /** Project is complete — read-only mode. */
+  const isDone = project?.project_status === "done";
+
+  /** All tasks are marked done — enables "Close Project" button. */
+  const allTasksDone = rawTaskData.length > 0 && rawTaskData.every((t) => t.task_status === "done");
+
+  /** Can edit = is a member and project is not done. */
+  const canEdit = isMember && !isDone;
+
+  // ── Awards (only computed for done projects) ──
+  type Award = { emoji: string; titleKey: string; userId: string; statKey: string; statValue: string };
+  const awards: Award[] = useMemo(() => {
+    if (!isDone || rawTaskData.length === 0) return [];
+
+    const memberStats: Record<string, { done: number; total: number; totalDays: number; onTime: number }> = {};
+    for (const t of rawTaskData) {
+      for (const a of t.assignees) {
+        if (!memberStats[a.user_id]) memberStats[a.user_id] = { done: 0, total: 0, totalDays: 0, onTime: 0 };
+        memberStats[a.user_id].total++;
+        if (t.task_status === "done") {
+          memberStats[a.user_id].done++;
+          if (t.finished_at && t.created_at) {
+            const days = (new Date(t.finished_at).getTime() - new Date(t.created_at).getTime()) / 86400000;
+            memberStats[a.user_id].totalDays += Math.max(0, days);
+          }
+          if (t.finished_at && t.due_date) {
+            if (new Date(t.finished_at) <= new Date(t.due_date + "T23:59:59")) {
+              memberStats[a.user_id].onTime++;
+            }
+          }
+        }
+      }
+    }
+
+    const entries = Object.entries(memberStats);
+    if (entries.length === 0) return [];
+
+    const result: Award[] = [];
+
+    // ⚡ Speed Star — fastest avg completion
+    const withAvg = entries.filter(([, s]) => s.done > 0).map(([id, s]) => ({ id, avg: s.totalDays / s.done }));
+    if (withAvg.length > 0) {
+      const fastest = withAvg.sort((a, b) => a.avg - b.avg)[0];
+      result.push({ emoji: "⚡", titleKey: "speedStar", userId: fastest.id, statKey: "avgDaysPerTask", statValue: fastest.avg.toFixed(1) });
+    }
+
+    // 🏆 MVP — most tasks completed
+    const byDone = entries.filter(([, s]) => s.done > 0).sort((a, b) => b[1].done - a[1].done);
+    if (byDone.length > 0) {
+      result.push({ emoji: "🏆", titleKey: "mvp", userId: byDone[0][0], statKey: "tasksCompleted", statValue: String(byDone[0][1].done) });
+    }
+
+    // 🎯 On-Time King — highest on-time %
+    const withOnTime = entries.filter(([, s]) => s.done > 0).map(([id, s]) => ({ id, pct: (s.onTime / s.done) * 100 }));
+    if (withOnTime.length > 0) {
+      const best = withOnTime.sort((a, b) => b.pct - a.pct)[0];
+      result.push({ emoji: "🎯", titleKey: "onTimeKing", userId: best.id, statKey: "onTimeRate", statValue: `${Math.round(best.pct)}%` });
+    }
+
+    // 🔥 Early Bird — most tasks finished early
+    const earlyCount: Record<string, number> = {};
+    for (const t of rawTaskData) {
+      if (t.task_status === "done" && t.finished_at && t.due_date) {
+        const daysEarly = (new Date(t.due_date + "T23:59:59").getTime() - new Date(t.finished_at).getTime()) / 86400000;
+        if (daysEarly > 0) {
+          for (const a of t.assignees) {
+            earlyCount[a.user_id] = (earlyCount[a.user_id] ?? 0) + 1;
+          }
+        }
+      }
+    }
+    const earlyEntries = Object.entries(earlyCount).sort((a, b) => b[1] - a[1]);
+    if (earlyEntries.length > 0) {
+      result.push({ emoji: "🔥", titleKey: "earlyBird", userId: earlyEntries[0][0], statKey: "tasksEarly", statValue: String(earlyEntries[0][1]) });
+    }
+
+    // 💪 Workhorse — most tasks assigned
+    const byTotal = [...entries].sort((a, b) => b[1].total - a[1].total);
+    if (byTotal.length > 0) {
+      result.push({ emoji: "💪", titleKey: "workhorse", userId: byTotal[0][0], statKey: "tasksAssigned", statValue: String(byTotal[0][1].total) });
+    }
+
+    return result;
+  }, [isDone, rawTaskData]);
+
+  const tr = useTranslations("recap");
+
   // ── Save project metadata ──
   const origDeadline = project?.final_due_date ? project.final_due_date.slice(0, 10) : "";
   const isDirty = project ? (
@@ -547,10 +638,37 @@ function ProjectInfoEditContent({
       } finally {
         setSaving(false);
       }
-    } else {
+    } else if (confirm === "discard") {
       router.back();
     }
     setConfirm(null);
+  };
+
+  const handleDeleteProject = async () => {
+    setDeleting(true);
+    try {
+      const res = await apiFetch(`/api/v1/projects/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      router.replace("/info-edit");
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+    } finally {
+      setDeleting(false);
+      setConfirm(null);
+    }
+  };
+
+  const handleCloseProject = async () => {
+    setClosing(true);
+    try {
+      const updated = await updateProject(id, { project_status: "done" });
+      setProject(updated);
+      setConfirm(null);
+    } catch (err) {
+      console.error("Failed to close project:", err);
+    } finally {
+      setClosing(false);
+    }
   };
 
   // ── Loading / Error ──
@@ -684,6 +802,45 @@ function ProjectInfoEditContent({
           </div>
         </div>
 
+        {/* ── Awards (done projects only) ── */}
+        {isDone && awards.length > 0 && (
+          <section className="bg-gradient-to-br from-santi-secondary/60 to-santi-primary/20 rounded-2xl p-5 space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-black">{tr("projectComplete")}</h3>
+              <div className="flex items-center justify-center gap-3 mt-1 text-sm text-black/60">
+                <span>{tr("tasksDone", { done: rawTaskData.filter((t) => t.task_status === "done").length, total: rawTaskData.length })}</span>
+                <span>·</span>
+                <span>{tr("meetingsHeld", { count: meetings.length })}</span>
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              {awards.map((award) => {
+                const member = members.find((m) => m.user_id === award.userId);
+                return (
+                  <div key={award.titleKey} className="flex items-center gap-3 bg-white/70 rounded-xl px-3.5 py-2.5">
+                    <span className="text-2xl shrink-0">{award.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-black">{tr(award.titleKey as any)}</p>
+                      <p className="text-xs text-black/50">{tr(award.statKey as any, { value: award.statValue })}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={member?.picture_url ?? "/default-avatar.png"}
+                        alt={member?.display_name ?? ""}
+                        className="w-6 h-6 rounded-full object-cover bg-slate-100"
+                      />
+                      <span className="text-xs font-semibold text-black/70 max-w-[80px] truncate">
+                        {member?.display_name ?? tc("unknown")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* ── Project Details (collapsible) ── */}
         <SectionToggle label="Project Details" open={showDetails} onToggle={() => setShowDetails((v) => !v)} />
 
@@ -697,14 +854,14 @@ function ProjectInfoEditContent({
                 placeholder="e.g. Science Fair Presentation"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                readOnly={!isMember}
+                readOnly={!canEdit}
               />
             </div>
 
             {/* Deadline */}
             <div className="flex flex-col gap-2">
               <label className="santi-label">Project Deadline</label>
-              <DatePicker value={deadline} onChange={isMember ? setDeadline : () => {}} placeholder="Select date & time" />
+              <DatePicker value={deadline} onChange={canEdit ? setDeadline : () => {}} placeholder="Select date & time" />
             </div>
 
             {/* Project Detail */}
@@ -719,7 +876,7 @@ function ProjectInfoEditContent({
                 placeholder="Describe your goals, team size, and any specific requirements..."
                 value={detail}
                 onChange={(e) => setDetail(e.target.value)}
-                readOnly={!isMember}
+                readOnly={!canEdit}
               />
             </div>
 
@@ -731,7 +888,7 @@ function ProjectInfoEditContent({
                 placeholder="e.g. Figma file, PDF report, Codebase"
                 value={deliverables}
                 onChange={(e) => setDeliverables(e.target.value)}
-                readOnly={!isMember}
+                readOnly={!canEdit}
               />
             </div>
           </div>
@@ -839,7 +996,7 @@ function ProjectInfoEditContent({
                           <p className="font-semibold text-sm text-black leading-snug">{task.title}</p>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <div className="relative">
-                              {isMember ? (
+                              {canEdit ? (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id); }}
                                 className="rounded-full active:scale-95 transition-transform"
@@ -849,7 +1006,7 @@ function ProjectInfoEditContent({
                               ) : (
                                 <TaskStatusBadge status={task.status} />
                               )}
-                              {isMember && statusDropdownId === task.id && (
+                              {canEdit && statusDropdownId === task.id && (
                                 <>
                                   <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setStatusDropdownId(null); }} />
                                   <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg border border-slate-100 py-1 min-w-[120px]">
@@ -872,7 +1029,7 @@ function ProjectInfoEditContent({
                                 </>
                               )}
                             </div>
-                            {canEditTask(task) && (
+                            {canEdit && canEditTask(task) && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "task", id: task.id }); }}
                                 className="p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -900,7 +1057,7 @@ function ProjectInfoEditContent({
                             )}
                             <div className="flex items-center justify-between mt-2">
                               <AssigneeAvatars ids={task.assigned_to} members={members} />
-                              {canEditTask(task) && (
+                              {canEdit && canEditTask(task) && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "task", id: task.id }); }}
                                   className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
@@ -933,7 +1090,7 @@ function ProjectInfoEditContent({
                             <p className="font-semibold text-sm text-black leading-snug">{meeting.title}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            {canEditMeeting() && (
+                            {canEdit && canEditMeeting() && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setEditingItem({ type: "meeting", id: meeting.id }); }}
                                 className="p-1 rounded-lg hover:bg-santi-secondary/60 transition-colors"
@@ -952,7 +1109,7 @@ function ProjectInfoEditContent({
                             </div>
                             <div className="flex items-center justify-between mt-2">
                               <AssigneeAvatars ids={meeting.participants} members={members} />
-                              {canEditMeeting() && (
+                              {canEdit && canEditMeeting() && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "meeting", id: meeting.id }); }}
                                   className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
@@ -975,7 +1132,7 @@ function ProjectInfoEditContent({
             )}
 
             {/* Create Task */}
-            {isMember && (
+            {canEdit && (
               <button
                 onClick={() => setShowCreateTask(true)}
                 className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
@@ -988,13 +1145,13 @@ function ProjectInfoEditContent({
         )}
 
         {/* Create Task button when no tasks exist yet */}
-        {!hasTasks && isMember && (
+        {!hasTasks && canEdit && (
           <button
             onClick={() => setShowCreateTask(true)}
             className="w-full py-3 rounded-2xl border-2 border-dashed border-santi-primary/40 text-sm font-semibold text-black/60 hover:border-santi-primary hover:text-black transition-colors flex items-center justify-center gap-2"
           >
             <PlusIcon className="w-4 h-4" />
-            Create Task
+            {tp("createTask")}
           </button>
         )}
       </main>
@@ -1005,8 +1162,8 @@ function ProjectInfoEditContent({
       {/* Fixed footer */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-santi-muted/10 z-30">
         <div className="max-w-md mx-auto">
-          {/* Save bar — only when dirty (members only) */}
-          {isMember && isDirty && (
+          {/* Save bar — only when dirty (editable projects only) */}
+          {canEdit && isDirty && (
             <div className="px-6 pt-3">
               <button
                 onClick={handleSaveClick}
@@ -1019,9 +1176,35 @@ function ProjectInfoEditContent({
             </div>
           )}
 
+          {/* Delete draft button */}
+          {isCreator && project.project_status === "draft" && (
+            <div className="px-6 pt-3">
+              <button
+                onClick={() => setConfirm("delete")}
+                disabled={deleting}
+                className="w-full py-3 rounded-santi border-2 border-red-400 font-bold text-sm text-red-500 bg-white active:bg-red-50 transition-colors disabled:opacity-40"
+              >
+                {tc("delete")}
+              </button>
+            </div>
+          )}
+
+          {/* Close Project button — creator only, all tasks must be done */}
+          {isCreator && project.project_status === "approved" && allTasksDone && (
+            <div className="px-6 pt-3">
+              <button
+                onClick={() => setConfirm("close")}
+                disabled={closing}
+                className="w-full py-3 rounded-santi bg-green-500 font-bold text-sm text-white active:brightness-95 transition-all disabled:opacity-40"
+              >
+                {tp("closeProject")}
+              </button>
+            </div>
+          )}
+
           {/* Edit with AI + Close */}
           <div className="flex gap-3 px-6 pt-3 pb-2">
-            {isMember && (
+            {canEdit && (
               <button
                 onClick={() => router.push(`/info-edit/project/${id}/edit-with-ai`)}
                 className="flex-1 py-3.5 rounded-santi border-2 border-santi-primary font-bold text-sm text-black bg-white active:bg-santi-secondary/30 transition-colors"
@@ -1071,10 +1254,10 @@ function ProjectInfoEditContent({
       {/* Confirm dialogs */}
       {confirm === "discard" && (
         <ConfirmDialog
-          title="Discard changes?"
-          message="You have unsaved changes. Are you sure you want to leave without saving?"
-          confirmLabel="Discard"
-          cancelLabel="Keep editing"
+          title={td("discardChanges")}
+          message={td("unsavedLeave")}
+          confirmLabel={tc("discard")}
+          cancelLabel={tc("keepEditing")}
           confirmClassName="bg-red-500 text-white"
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
@@ -1082,11 +1265,32 @@ function ProjectInfoEditContent({
       )}
       {confirm === "save" && (
         <ConfirmDialog
-          title="Save changes?"
-          message="Are you sure you want to save the changes to this project?"
-          confirmLabel="Save"
-          cancelLabel="Keep editing"
+          title={td("saveChanges")}
+          message={td("saveProjectConfirm")}
+          confirmLabel={tc("save")}
+          cancelLabel={tc("keepEditing")}
           onConfirm={handleConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === "delete" && (
+        <ConfirmDialog
+          title={td("deleteProject")}
+          message={td("deleteProjectMessage")}
+          confirmLabel={tc("delete")}
+          cancelLabel={tc("cancel")}
+          confirmClassName="bg-red-500 text-white"
+          onConfirm={handleDeleteProject}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === "close" && (
+        <ConfirmDialog
+          title={td("closeProject")}
+          message={td("closeProjectMessage")}
+          confirmLabel={tc("confirm")}
+          cancelLabel={tc("cancel")}
+          onConfirm={handleCloseProject}
           onCancel={() => setConfirm(null)}
         />
       )}
