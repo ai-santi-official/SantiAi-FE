@@ -742,14 +742,16 @@ function ProjectInfoEditContent({
           <h1 className="text-lg font-bold text-black">{tb("name")}</h1>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <button
-              onClick={() => setShowVersionHistory(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/60 text-black text-xs font-semibold active:bg-white/80 transition-colors"
-              aria-label={tp("history")}
-            >
-              <HistoryIcon />
-              {tp("history")}
-            </button>
+            {!isDone && (
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/60 text-black text-xs font-semibold active:bg-white/80 transition-colors"
+                aria-label={tp("history")}
+              >
+                <HistoryIcon />
+                {tp("history")}
+              </button>
+            )}
             <button
               onClick={() => router.push("/info-edit")}
               aria-label={tc("close")}
