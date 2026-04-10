@@ -901,7 +901,7 @@ function ProjectInfoEditContent({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold text-black">
-                {tdp(MONTH_KEYS[calDisplayMonth])} {calDisplayYear}
+                {tdp(`months.${MONTH_KEYS[calDisplayMonth]}`)} {calDisplayYear}
               </h3>
               <div className="flex gap-1">
                 <button onClick={prevCal} disabled={!canGoPrev} className="p-1.5 rounded-lg disabled:opacity-30 text-black/60 hover:bg-slate-100 transition-colors">
