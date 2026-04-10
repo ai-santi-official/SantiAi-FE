@@ -843,54 +843,48 @@ function ProjectInfoEditContent({
           </section>
         )}
 
-        {/* ── Project Details (collapsible) ── */}
-        <SectionToggle label="Project Details" open={showDetails} onToggle={() => setShowDetails((v) => !v)} />
+        {/* ── Project Details (collapsible, read-only) ── */}
+        <SectionToggle label={t("projectDetails")} open={showDetails} onToggle={() => setShowDetails((v) => !v)} />
 
         {showDetails && (
           <div className="space-y-4">
             {/* Project Name */}
             <div className="flex flex-col gap-2">
-              <label className="santi-label">Project Name</label>
+              <label className="santi-label">{t("projectName")}</label>
               <input
                 className="santi-input"
-                placeholder="e.g. Science Fair Presentation"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                readOnly={!canEdit}
+                readOnly
               />
             </div>
 
             {/* Deadline */}
             <div className="flex flex-col gap-2">
-              <label className="santi-label">Project Deadline</label>
-              <DatePicker value={deadline} onChange={canEdit ? setDeadline : () => {}} placeholder="Select date & time" />
+              <label className="santi-label">{t("projectDeadline")}</label>
+              <DatePicker value={deadline} onChange={() => {}} />
             </div>
 
             {/* Project Detail */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <SparklesIcon className="w-5 h-5 text-santi-primary" />
-                <label className="santi-label">Project Detail</label>
+                <label className="santi-label">{t("projectDetail")}</label>
               </div>
               <textarea
                 className="santi-textarea"
                 rows={4}
-                placeholder="Describe your goals, team size, and any specific requirements..."
                 value={detail}
-                onChange={(e) => setDetail(e.target.value)}
-                readOnly={!canEdit}
+                readOnly
               />
             </div>
 
             {/* Final Deliverables */}
             <div className="flex flex-col gap-2">
-              <label className="santi-label">Final Deliverables</label>
+              <label className="santi-label">{t("finalDeliverables")}</label>
               <input
                 className="santi-input"
-                placeholder="e.g. Figma file, PDF report, Codebase"
                 value={deliverables}
-                onChange={(e) => setDeliverables(e.target.value)}
-                readOnly={!canEdit}
+                readOnly
               />
             </div>
           </div>

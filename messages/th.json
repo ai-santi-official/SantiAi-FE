@@ -141,7 +141,11 @@
     "projectDetails": "รายละเอียดโปรเจกต์",
     "tasksMeetings": "งานและการประชุม",
     "noTasksOrMeetings": "ยังไม่มีงานหรือการประชุม",
-    "noDate": "ไม่มีวันที่"
+    "noDate": "ไม่มีวันที่",
+    "projectName": "ชื่อโปรเจกต์",
+    "projectDeadline": "กำหนดส่งโปรเจกต์",
+    "projectDetail": "รายละเอียดโปรเจกต์",
+    "finalDeliverables": "ผลงานที่ต้องส่ง"
   },
   "meeting": {
     "createMeeting": "สร้างการประชุม",

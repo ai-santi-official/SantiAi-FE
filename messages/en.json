@@ -141,7 +141,11 @@
     "projectDetails": "Project Details",
     "tasksMeetings": "Tasks & Meetings",
     "noTasksOrMeetings": "No tasks or meetings yet.",
-    "noDate": "No date"
+    "noDate": "No date",
+    "projectName": "Project Name",
+    "projectDeadline": "Project Deadline",
+    "projectDetail": "Project Detail",
+    "finalDeliverables": "Final Deliverables"
   },
   "meeting": {
     "createMeeting": "Create Meeting",
