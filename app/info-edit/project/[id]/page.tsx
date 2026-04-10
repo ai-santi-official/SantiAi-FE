@@ -404,12 +404,14 @@ function ProjectInfoEditContent({
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status } : t));
+    setRawTaskData((prev) => prev.map((t) => t.task_id === taskId ? { ...t, task_status: status } : t));
     try {
       await updateTaskStatus(taskId, status);
       bumpVersion();
     } catch (err) {
       console.error("Failed to update task status:", err);
       setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: task.status } : t));
+      setRawTaskData((prev) => prev.map((t) => t.task_id === taskId ? { ...t, task_status: task.status } : t));
     }
   };
 
