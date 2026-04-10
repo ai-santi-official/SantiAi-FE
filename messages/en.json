@@ -212,7 +212,8 @@
     "revertToVersion": "Revert to v{version}?",
     "revertMessage": "This will create a new version with the snapshot from the selected version. Your current changes will still be available in the history.",
     "closeProject": "Close this project?",
-    "closeProjectMessage": "This will mark the project as complete and send a recap to the group chat. This action cannot be undone."
+    "closeProjectMessage": "This will mark the project as complete and send a recap to the group chat. This action cannot be undone.",
+    "closeProjectWarning": "You still have {count} unfinished task(s):"
   },
   "recap": {
     "projectComplete": "Project Complete!",

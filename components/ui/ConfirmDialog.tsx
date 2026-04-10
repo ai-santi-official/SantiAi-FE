@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type Props = {
   title: string;
   message: string;
@@ -8,6 +10,7 @@ type Props = {
   confirmClassName?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 };
 
 export default function ConfirmDialog({
@@ -18,6 +21,7 @@ export default function ConfirmDialog({
   confirmClassName = "bg-santi-primary text-black",
   onConfirm,
   onCancel,
+  children,
 }: Props) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
@@ -26,6 +30,7 @@ export default function ConfirmDialog({
         <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-2" />
         <h3 className="text-base font-bold text-black">{title}</h3>
         <p className="text-sm text-black/60 leading-relaxed">{message}</p>
+        {children}
         <div className="flex gap-3 pt-1">
           <button
             onClick={onCancel}

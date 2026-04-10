@@ -1187,8 +1187,8 @@ function ProjectInfoEditContent({
             </div>
           )}
 
-          {/* Close Project button — creator only, all tasks must be done */}
-          {isCreator && project.project_status === "approved" && allTasksDone && (
+          {/* Close Project button — creator only, approved projects */}
+          {isCreator && project.project_status === "approved" && (
             <div className="px-6 pt-3">
               <button
                 onClick={() => setConfirm("close")}
@@ -1282,16 +1282,35 @@ function ProjectInfoEditContent({
           onCancel={() => setConfirm(null)}
         />
       )}
-      {confirm === "close" && (
-        <ConfirmDialog
-          title={td("closeProject")}
-          message={td("closeProjectMessage")}
-          confirmLabel={tc("confirm")}
-          cancelLabel={tc("cancel")}
-          onConfirm={handleCloseProject}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm === "close" && (() => {
+        const unfinished = rawTaskData.filter((t) => t.task_status !== "done");
+        return (
+          <ConfirmDialog
+            title={td("closeProject")}
+            message={td("closeProjectMessage")}
+            confirmLabel={tc("confirm")}
+            cancelLabel={tc("cancel")}
+            onConfirm={handleCloseProject}
+            onCancel={() => setConfirm(null)}
+          >
+            {unfinished.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-amber-700">
+                  {td("closeProjectWarning", { count: unfinished.length })}
+                </p>
+                <ul className="space-y-1">
+                  {unfinished.map((t) => (
+                    <li key={t.task_id} className="text-xs text-amber-600 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      {t.task_title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </ConfirmDialog>
+        );
+      })()}
 
       {/* Create Task Sheet */}
       {showCreateTask && (
