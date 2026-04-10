@@ -68,6 +68,7 @@
   "onboarding": {
     "createNewProject": "สร้างโปรเจกต์ใหม่",
     "selectMembers": "เลือกสมาชิก",
+    "memberMissingHint": "หาสมาชิกไม่เจอ? ให้พิมพ์ \"agree\" ในแชทกลุ่มเพื่อลงทะเบียน",
     "fillInDetails": "กรอกรายละเอียด",
     "projectName": "ชื่อโปรเจกต์",
     "projectNamePlaceholder": "เช่น พรีเซนต์งานวิทยาศาสตร์",

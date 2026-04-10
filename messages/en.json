@@ -68,6 +68,7 @@
   "onboarding": {
     "createNewProject": "Create a new project",
     "selectMembers": "Select members",
+    "memberMissingHint": "Member missing? Ask them to type \"agree\" in the group chat to register.",
     "fillInDetails": "Fill in the details",
     "projectName": "Project Name",
     "projectNamePlaceholder": "e.g. Science Fair Presentation",

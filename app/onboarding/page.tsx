@@ -145,6 +145,7 @@ export default function OnboardingPage() {
         <section className="mb-6">
           <h2 className="text-xl font-bold text-black">{t("createNewProject")}</h2>
           <p className="text-sm text-black/60">{t("selectMembers")}</p>
+          <p className="text-xs text-black/40 mt-1">{t("memberMissingHint")}</p>
         </section>
 
         {/* Select All */}
